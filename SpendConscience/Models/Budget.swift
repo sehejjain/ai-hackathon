@@ -9,7 +9,7 @@ final class Budget: Identifiable, Hashable {
         case invalidAlertThreshold
     }
     @Attribute(.unique) var id: UUID
-    @Attribute(.unique) private var categoryRaw: String
+    @Attribute(.unique) var categoryRaw: String
     var monthlyLimit: Decimal
     var currentSpent: Decimal
     var alertThreshold: Double
