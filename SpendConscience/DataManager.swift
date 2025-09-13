@@ -162,7 +162,8 @@ class DataManager: ObservableObject {
     func saveBudget(_ budget: Budget) async -> Bool {
         do {
             // Check if budget already exists
-            let descriptor = FetchDescriptor<Budget>(predicate: #Predicate { $0.categoryRaw == budget.categoryRaw })
+            let categoryRaw = budget.categoryRaw
+            let descriptor = FetchDescriptor<Budget>(predicate: #Predicate { $0.categoryRaw == categoryRaw })
             let existingBudgets = try modelContext.fetch(descriptor)
 
             if let existingBudget = existingBudgets.first {
