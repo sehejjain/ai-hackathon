@@ -1,0 +1,579 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		1C6F00BC2E7615A00082B23D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C6F00A62E76159D0082B23D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1C6F00AD2E76159D0082B23D;
+			remoteInfo = SpendConscience;
+		};
+		1C6F00C62E7615A00082B23D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C6F00A62E76159D0082B23D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1C6F00AD2E76159D0082B23D;
+			remoteInfo = SpendConscience;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1C6F00AE2E76159D0082B23D /* SpendConscience.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpendConscience.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1C6F00BB2E7615A00082B23D /* SpendConscienceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpendConscienceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1C6F00C52E7615A00082B23D /* SpendConscienceUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpendConscienceUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1C6F00B02E76159D0082B23D /* SpendConscience */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SpendConscience;
+			sourceTree = "<group>";
+		};
+		1C6F00BE2E7615A00082B23D /* SpendConscienceTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SpendConscienceTests;
+			sourceTree = "<group>";
+		};
+		1C6F00C82E7615A00082B23D /* SpendConscienceUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SpendConscienceUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1C6F00AB2E76159D0082B23D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6F00B82E7615A00082B23D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6F00C22E7615A00082B23D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1C6F00A52E76159D0082B23D = {
+			isa = PBXGroup;
+			children = (
+				1C6F00B02E76159D0082B23D /* SpendConscience */,
+				1C6F00BE2E7615A00082B23D /* SpendConscienceTests */,
+				1C6F00C82E7615A00082B23D /* SpendConscienceUITests */,
+				1C6F00AF2E76159D0082B23D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1C6F00AF2E76159D0082B23D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1C6F00AE2E76159D0082B23D /* SpendConscience.app */,
+				1C6F00BB2E7615A00082B23D /* SpendConscienceTests.xctest */,
+				1C6F00C52E7615A00082B23D /* SpendConscienceUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1C6F00AD2E76159D0082B23D /* SpendConscience */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1C6F00CF2E7615A00082B23D /* Build configuration list for PBXNativeTarget "SpendConscience" */;
+			buildPhases = (
+				1C6F00AA2E76159D0082B23D /* Sources */,
+				1C6F00AB2E76159D0082B23D /* Frameworks */,
+				1C6F00AC2E76159D0082B23D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1C6F00B02E76159D0082B23D /* SpendConscience */,
+			);
+			name = SpendConscience;
+			packageProductDependencies = (
+			);
+			productName = SpendConscience;
+			productReference = 1C6F00AE2E76159D0082B23D /* SpendConscience.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1C6F00BA2E7615A00082B23D /* SpendConscienceTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1C6F00D22E7615A00082B23D /* Build configuration list for PBXNativeTarget "SpendConscienceTests" */;
+			buildPhases = (
+				1C6F00B72E7615A00082B23D /* Sources */,
+				1C6F00B82E7615A00082B23D /* Frameworks */,
+				1C6F00B92E7615A00082B23D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1C6F00BD2E7615A00082B23D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1C6F00BE2E7615A00082B23D /* SpendConscienceTests */,
+			);
+			name = SpendConscienceTests;
+			packageProductDependencies = (
+			);
+			productName = SpendConscienceTests;
+			productReference = 1C6F00BB2E7615A00082B23D /* SpendConscienceTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		1C6F00C42E7615A00082B23D /* SpendConscienceUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1C6F00D52E7615A00082B23D /* Build configuration list for PBXNativeTarget "SpendConscienceUITests" */;
+			buildPhases = (
+				1C6F00C12E7615A00082B23D /* Sources */,
+				1C6F00C22E7615A00082B23D /* Frameworks */,
+				1C6F00C32E7615A00082B23D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1C6F00C72E7615A00082B23D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1C6F00C82E7615A00082B23D /* SpendConscienceUITests */,
+			);
+			name = SpendConscienceUITests;
+			packageProductDependencies = (
+			);
+			productName = SpendConscienceUITests;
+			productReference = 1C6F00C52E7615A00082B23D /* SpendConscienceUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1C6F00A62E76159D0082B23D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					1C6F00AD2E76159D0082B23D = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					1C6F00BA2E7615A00082B23D = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 1C6F00AD2E76159D0082B23D;
+					};
+					1C6F00C42E7615A00082B23D = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 1C6F00AD2E76159D0082B23D;
+					};
+				};
+			};
+			buildConfigurationList = 1C6F00A92E76159D0082B23D /* Build configuration list for PBXProject "SpendConscience" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1C6F00A52E76159D0082B23D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1C6F00AF2E76159D0082B23D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1C6F00AD2E76159D0082B23D /* SpendConscience */,
+				1C6F00BA2E7615A00082B23D /* SpendConscienceTests */,
+				1C6F00C42E7615A00082B23D /* SpendConscienceUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1C6F00AC2E76159D0082B23D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6F00B92E7615A00082B23D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6F00C32E7615A00082B23D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1C6F00AA2E76159D0082B23D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6F00B72E7615A00082B23D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6F00C12E7615A00082B23D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1C6F00BD2E7615A00082B23D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1C6F00AD2E76159D0082B23D /* SpendConscience */;
+			targetProxy = 1C6F00BC2E7615A00082B23D /* PBXContainerItemProxy */;
+		};
+		1C6F00C72E7615A00082B23D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1C6F00AD2E76159D0082B23D /* SpendConscience */;
+			targetProxy = 1C6F00C62E7615A00082B23D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1C6F00CD2E7615A00082B23D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1C6F00CE2E7615A00082B23D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		1C6F00D02E7615A00082B23D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_NSCalendarsUsageDescription" = "SpendConscience needs calendar access to help you budget for upcoming events and prevent overspending by analyzing your scheduled activities.";
+				"INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription" = "SpendConscience needs to create budget reminders and spending alerts in your calendar to help you stay on track with your financial goals.";
+				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription" = "SpendConscience needs full calendar access to analyze your upcoming events for budget planning and to create spending alerts and reminders.";
+				"INFOPLIST_KEY_NSRemindersUsageDescription" = "SpendConscience creates reminders to help you stay on track with your budget goals and spending limits.";
+				"INFOPLIST_KEY_NSUserNotificationsUsageDescription" = "SpendConscience sends notifications to warn you about potential budget overruns and provide timely spending guidance.";
+				"INFOPLIST_KEY_NSSiriUsageDescription" = "SpendConscience integrates with Siri so you can check your budget status and get spending advice using voice commands.";
+				"INFOPLIST_KEY_NSFaceIDUsageDescription" = "SpendConscience uses Face ID to securely access your financial data and budget information.";
+				"INFOPLIST_KEY_NSLocalNetworkUsageDescription" = "SpendConscience needs network access to securely connect to your bank through Plaid for transaction data.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpendConscience;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1C6F00D12E7615A00082B23D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_NSCalendarsUsageDescription" = "SpendConscience needs calendar access to help you budget for upcoming events and prevent overspending by analyzing your scheduled activities.";
+				"INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription" = "SpendConscience needs to create budget reminders and spending alerts in your calendar to help you stay on track with your financial goals.";
+				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription" = "SpendConscience needs full calendar access to analyze your upcoming events for budget planning and to create spending alerts and reminders.";
+				"INFOPLIST_KEY_NSRemindersUsageDescription" = "SpendConscience creates reminders to help you stay on track with your budget goals and spending limits.";
+				"INFOPLIST_KEY_NSUserNotificationsUsageDescription" = "SpendConscience sends notifications to warn you about potential budget overruns and provide timely spending guidance.";
+				"INFOPLIST_KEY_NSSiriUsageDescription" = "SpendConscience integrates with Siri so you can check your budget status and get spending advice using voice commands.";
+				"INFOPLIST_KEY_NSFaceIDUsageDescription" = "SpendConscience uses Face ID to securely access your financial data and budget information.";
+				"INFOPLIST_KEY_NSLocalNetworkUsageDescription" = "SpendConscience needs network access to securely connect to your bank through Plaid for transaction data.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpendConscience;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1C6F00D32E7615A00082B23D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpendConscienceTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpendConscience.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SpendConscience";
+			};
+			name = Debug;
+		};
+		1C6F00D42E7615A00082B23D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpendConscienceTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpendConscience.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SpendConscience";
+			};
+			name = Release;
+		};
+		1C6F00D62E7615A00082B23D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpendConscienceUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SpendConscience;
+			};
+			name = Debug;
+		};
+		1C6F00D72E7615A00082B23D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H4X26UKF8L;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.SpendConscienceUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SpendConscience;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1C6F00A92E76159D0082B23D /* Build configuration list for PBXProject "SpendConscience" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C6F00CD2E7615A00082B23D /* Debug */,
+				1C6F00CE2E7615A00082B23D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1C6F00CF2E7615A00082B23D /* Build configuration list for PBXNativeTarget "SpendConscience" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C6F00D02E7615A00082B23D /* Debug */,
+				1C6F00D12E7615A00082B23D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1C6F00D22E7615A00082B23D /* Build configuration list for PBXNativeTarget "SpendConscienceTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C6F00D32E7615A00082B23D /* Debug */,
+				1C6F00D42E7615A00082B23D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1C6F00D52E7615A00082B23D /* Build configuration list for PBXNativeTarget "SpendConscienceUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C6F00D62E7615A00082B23D /* Debug */,
+				1C6F00D72E7615A00082B23D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1C6F00A62E76159D0082B23D /* Project object */;
+}
