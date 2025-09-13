@@ -7,6 +7,37 @@ import EventKit
 struct SpendConscienceApp: App {
     @AppStorage("permissionsChecked") private var permissionsChecked = false
     @StateObject private var permissionManager = PermissionManager()
+    @State private var containerError: Error?
+
+    var modelContainer: ModelContainer {
+        do {
+            let container = try ModelContainer(for: Transaction.self, Budget.self)
+            return container
+        } catch {
+            print("Failed to initialize ModelContainer: \(error)")
+
+            // Log detailed error for debugging
+            if let detailedError = error as? CocoaError {
+                print("CoreData Error Code: \(detailedError.code)")
+                print("CoreData Error Description: \(detailedError.localizedDescription)")
+            }
+
+            // Attempt to create a temporary container as fallback
+            do {
+                let tempContainer = try ModelContainer(
+                    for: Transaction.self, Budget.self,
+                    configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+                )
+                print("Created temporary in-memory container as fallback")
+                return tempContainer
+            } catch {
+                print("Failed to create fallback container: \(error)")
+
+                // Last resort: create minimal container
+                fatalError("Unable to initialize any ModelContainer. Please check your data model and try reinstalling the app.")
+            }
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -19,7 +50,7 @@ struct SpendConscienceApp: App {
                     }
                 }
         }
-        .modelContainer(for: [Transaction.self, Budget.self])
+        .modelContainer(modelContainer)
     }
     
     // MARK: - Permission Status Checking (No Prompts)

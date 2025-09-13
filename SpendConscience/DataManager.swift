@@ -37,11 +37,17 @@ class DataManager: ObservableObject {
         }
     }
 
+    private var loadTask: Task<Void, Never>?
+
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-        Task {
-            await loadAllData()
+        loadTask = Task { [weak self] in
+            await self?.loadAllData()
         }
+    }
+
+    deinit {
+        loadTask?.cancel()
     }
 
     // MARK: - Data Loading
@@ -97,7 +103,12 @@ class DataManager: ObservableObject {
             try modelContext.save()
 
             await MainActor.run {
-                self.transactions.insert(transaction, at: 0)
+                // Find the correct insertion index to maintain descending date order
+                let insertionIndex = self.transactions.firstIndex { existingTransaction in
+                    existingTransaction.date < transaction.date
+                } ?? self.transactions.count
+
+                self.transactions.insert(transaction, at: insertionIndex)
             }
             await updateBudgetForTransaction(transaction)
             return true
@@ -150,7 +161,20 @@ class DataManager: ObservableObject {
 
     func saveBudget(_ budget: Budget) async -> Bool {
         do {
-            modelContext.insert(budget)
+            // Check if budget already exists
+            let descriptor = FetchDescriptor<Budget>(predicate: #Predicate { $0.categoryRaw == budget.category.rawValue })
+            let existingBudgets = try modelContext.fetch(descriptor)
+
+            if let existingBudget = existingBudgets.first {
+                // Update existing budget
+                existingBudget.monthlyLimit = budget.monthlyLimit
+                existingBudget.currentSpent = budget.currentSpent
+                existingBudget.alertThreshold = budget.alertThreshold
+            } else {
+                // Insert new budget
+                modelContext.insert(budget)
+            }
+
             try modelContext.save()
 
             await MainActor.run {
@@ -192,16 +216,25 @@ class DataManager: ObservableObject {
         guard transaction.amount > 0 else { return } // Only count positive amounts (debits) towards budget
 
         if let budgetIndex = budgets.firstIndex(where: { $0.category == transaction.category }) {
-            let updatedBudget = budgets[budgetIndex]
-            updatedBudget.updateSpentAmount(by: transaction.amount)
+            await MainActor.run {
+                budgets[budgetIndex].updateSpentAmount(by: transaction.amount)
+            }
 
-            _ = await saveBudget(updatedBudget)
+            do {
+                try modelContext.save()
+            } catch {
+                await MainActor.run {
+                    self.error = .budgetSaveFailed
+                }
+            }
         }
     }
 
     private func updateBudgetSpending() async {
         let calendar = Calendar.current
         let currentMonth = calendar.dateInterval(of: .month, for: Date())
+
+        var updatedBudgets: [Budget] = []
 
         for budget in budgets {
             let categoryTransactions = transactions.filter { transaction in
@@ -213,8 +246,25 @@ class DataManager: ObservableObject {
             let totalSpent = categoryTransactions.reduce(Decimal(0)) { $0 + $1.amount }
 
             budget.currentSpent = totalSpent
+            updatedBudgets.append(budget)
+        }
 
-            _ = await saveBudget(budget)
+        // Perform a single batched save for all updated budgets
+        do {
+            try modelContext.save()
+
+            await MainActor.run {
+                // Update the local budgets array
+                for updatedBudget in updatedBudgets {
+                    if let index = self.budgets.firstIndex(where: { $0.id == updatedBudget.id }) {
+                        self.budgets[index] = updatedBudget
+                    }
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = .budgetSaveFailed
+            }
         }
     }
 

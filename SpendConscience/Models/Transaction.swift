@@ -9,18 +9,6 @@ final class Transaction: Identifiable, Hashable {
         case emptyDescription
     }
 
-    private static let currencyFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = Locale.current
-        return formatter
-    }()
-
-    private static let monthYearFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter
-    }()
     @Attribute(.unique) var id: UUID
     var amount: Decimal
     var transactionDescription: String
@@ -77,11 +65,11 @@ final class Transaction: Identifiable, Hashable {
     }
 
     var isCredit: Bool {
-        return amount < 0
+        return transactionType == .credit
     }
 
     var transactionType: TransactionType {
-        return amount >= 0 ? .debit : .credit
+        return amount < 0 ? .credit : .debit
     }
 
     enum TransactionType {
@@ -90,11 +78,11 @@ final class Transaction: Identifiable, Hashable {
     }
 
     var formattedAmount: String {
-        return Self.currencyFormatter.string(from: NSDecimalNumber(decimal: amount)) ?? "$0.00"
+        return amount.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 
     var monthYear: String {
-        return Self.monthYearFormatter.string(from: date)
+        return date.formatted(.dateTime.month(.wide).year())
     }
 
     func hash(into hasher: inout Hasher) {
@@ -105,53 +93,30 @@ final class Transaction: Identifiable, Hashable {
         lhs.id == rhs.id
     }
 
+#if DEBUG
     static func sampleTransactions() -> [Transaction] {
         let calendar = Calendar.current
         let now = Date()
 
-        return [
-            try! Transaction(
-                amount: 25.50,
-                description: "Coffee and pastry",
-                category: .dining,
-                date: calendar.date(byAdding: .day, value: -1, to: now) ?? now
-            ),
-            try! Transaction(
-                amount: 120.00,
-                description: "Weekly groceries",
-                category: .groceries,
-                date: calendar.date(byAdding: .day, value: -2, to: now) ?? now
-            ),
-            try! Transaction(
-                amount: 15.99,
-                description: "Movie ticket",
-                category: .entertainment,
-                date: calendar.date(byAdding: .day, value: -3, to: now) ?? now
-            ),
-            try! Transaction(
-                amount: 45.00,
-                description: "Gas station",
-                category: .transportation,
-                date: calendar.date(byAdding: .day, value: -4, to: now) ?? now
-            ),
-            try! Transaction(
-                amount: 89.99,
-                description: "New shoes",
-                category: .shopping,
-                date: calendar.date(byAdding: .day, value: -5, to: now) ?? now
-            ),
-            try! Transaction(
-                amount: 150.00,
-                description: "Electricity bill",
-                category: .utilities,
-                date: calendar.date(byAdding: .day, value: -6, to: now) ?? now
-            ),
-            try! Transaction(
-                amount: -25.00,
-                description: "Restaurant refund",
-                category: .dining,
-                date: calendar.date(byAdding: .day, value: -7, to: now) ?? now
-            )
+        let transactionConfigs: [(Decimal, String, TransactionCategory, Int)] = [
+            (25.50, "Coffee and pastry", .dining, -1),
+            (120.00, "Weekly groceries", .groceries, -2),
+            (15.99, "Movie ticket", .entertainment, -3),
+            (45.00, "Gas station", .transportation, -4),
+            (89.99, "New shoes", .shopping, -5),
+            (150.00, "Electricity bill", .utilities, -6),
+            (-25.00, "Restaurant refund", .dining, -7)
         ]
+
+        return transactionConfigs.compactMap { amount, description, category, dayOffset in
+            let date = calendar.date(byAdding: .day, value: dayOffset, to: now) ?? now
+            do {
+                return try Transaction(amount: amount, description: description, category: category, date: date)
+            } catch {
+                print("Failed to create sample transaction: \(error)")
+                return nil
+            }
+        }
     }
+#endif
 }

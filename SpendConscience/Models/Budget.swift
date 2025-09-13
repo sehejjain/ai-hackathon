@@ -14,7 +14,7 @@ final class Budget: Identifiable, Hashable {
     var currentSpent: Decimal
     var alertThreshold: Double
 
-    @Relationship(deleteRule: .cascade, inverse: \Transaction.budget) var transactions: [Transaction] = []
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.budget) var transactions: [Transaction] = []
 
     var category: TransactionCategory {
         get {
@@ -97,24 +97,42 @@ final class Budget: Identifiable, Hashable {
     }
 
     static func defaultBudgets() -> [Budget] {
-        return [
-            try! Budget(category: .utilities, monthlyLimit: 200),
-            try! Budget(category: .groceries, monthlyLimit: 400),
-            try! Budget(category: .transportation, monthlyLimit: 150),
-            try! Budget(category: .dining, monthlyLimit: 300),
-            try! Budget(category: .shopping, monthlyLimit: 250),
-            try! Budget(category: .entertainment, monthlyLimit: 100)
+        let budgetConfigs: [(TransactionCategory, Decimal)] = [
+            (.utilities, 200),
+            (.groceries, 400),
+            (.transportation, 150),
+            (.dining, 300),
+            (.shopping, 250),
+            (.entertainment, 100)
         ]
+
+        return budgetConfigs.compactMap { category, monthlyLimit in
+            do {
+                return try Budget(category: category, monthlyLimit: monthlyLimit)
+            } catch {
+                print("Failed to create default budget for \(category): \(error)")
+                return nil
+            }
+        }
     }
 
     static func sampleBudgets() -> [Budget] {
-        return [
-            try! Budget(category: .utilities, monthlyLimit: 200, currentSpent: 150),
-            try! Budget(category: .groceries, monthlyLimit: 400, currentSpent: 320),
-            try! Budget(category: .transportation, monthlyLimit: 150, currentSpent: 45),
-            try! Budget(category: .dining, monthlyLimit: 300, currentSpent: 275),
-            try! Budget(category: .shopping, monthlyLimit: 250, currentSpent: 180),
-            try! Budget(category: .entertainment, monthlyLimit: 100, currentSpent: 95)
+        let budgetConfigs: [(TransactionCategory, Decimal, Decimal)] = [
+            (.utilities, 200, 150),
+            (.groceries, 400, 320),
+            (.transportation, 150, 45),
+            (.dining, 300, 275),
+            (.shopping, 250, 180),
+            (.entertainment, 100, 95)
         ]
+
+        return budgetConfigs.compactMap { category, monthlyLimit, currentSpent in
+            do {
+                return try Budget(category: category, monthlyLimit: monthlyLimit, currentSpent: currentSpent)
+            } catch {
+                print("Failed to create sample budget for \(category): \(error)")
+                return nil
+            }
+        }
     }
 }
