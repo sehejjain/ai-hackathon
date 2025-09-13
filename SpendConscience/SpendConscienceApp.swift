@@ -7,7 +7,6 @@ import EventKit
 struct SpendConscienceApp: App {
     @AppStorage("permissionsChecked") private var permissionsChecked = false
     @StateObject private var permissionManager = PermissionManager()
-    @State private var containerError: Error?
 
     var modelContainer: ModelContainer {
         do {
