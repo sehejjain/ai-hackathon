@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import EventKit
 import UserNotifications
 
@@ -24,6 +25,8 @@ enum PermissionStatus {
 
 struct ContentView: View {
     @EnvironmentObject private var permissionManager: PermissionManager
+    @Environment(\.modelContext) private var modelContext
+    @State private var dataManager: DataManager?
     @State private var showPermissionSheet = false
     
     var body: some View {
@@ -74,6 +77,11 @@ struct ContentView: View {
             .sheet(isPresented: $showPermissionSheet) {
                 PermissionRequestView()
                     .environmentObject(permissionManager)
+            }
+            .onAppear {
+                if dataManager == nil {
+                    dataManager = DataManager(modelContext: modelContext)
+                }
             }
         }
     }

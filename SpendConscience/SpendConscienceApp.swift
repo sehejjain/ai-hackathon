@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import UserNotifications
 import EventKit
 
@@ -6,7 +7,7 @@ import EventKit
 struct SpendConscienceApp: App {
     @AppStorage("permissionsChecked") private var permissionsChecked = false
     @StateObject private var permissionManager = PermissionManager()
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -18,6 +19,7 @@ struct SpendConscienceApp: App {
                     }
                 }
         }
+        .modelContainer(for: [Transaction.self, Budget.self])
     }
     
     // MARK: - Permission Status Checking (No Prompts)
