@@ -506,7 +506,7 @@ class PlaidService: ObservableObject {
             print("✅ PlaidService: Created public token")
             
             // Step 2: Exchange for access token
-            let (accessToken, itemId) = try await exchangePublicToken(publicToken)
+            let (accessToken, _) = try await exchangePublicToken(publicToken)
             print("✅ PlaidService: Exchanged for access token: \(String(accessToken.prefix(10)))...")
             
             // Step 3: Create custom sandbox transactions for immediate data

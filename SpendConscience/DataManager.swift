@@ -349,6 +349,43 @@ class DataManager: ObservableObject {
         }
     }
 
+    // MARK: - Helper Methods for Views
+    
+    func getBudgetByID(_ id: UUID) -> Budget? {
+        return budgets.first { $0.id == id }
+    }
+    
+    func getTransactionByID(_ id: UUID) -> Transaction? {
+        return transactions.first { $0.id == id }
+    }
+    
+    func getTransactionsForCategory(_ category: TransactionCategory, limit: Int? = nil) -> [Transaction] {
+        let filtered = transactions.filter { $0.category == category }
+        if let limit = limit {
+            return Array(filtered.prefix(limit))
+        }
+        return filtered
+    }
+    
+    func getWeeklySpendingForCategory(_ category: TransactionCategory, reference: Date = Date()) -> Decimal {
+        let calendar = Calendar.current
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: reference)?.start ?? reference
+        let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? reference
+        
+        return transactions
+            .filter { transaction in
+                transaction.category == category &&
+                transaction.amount > 0 &&
+                transaction.date >= weekStart &&
+                transaction.date < weekEnd
+            }
+            .reduce(Decimal(0)) { $0 + $1.amount }
+    }
+    
+    func getBudgetForCategory(_ category: TransactionCategory) -> Budget? {
+        return budgets.first { $0.category == category }
+    }
+
     // MARK: - Sample Data
 
     func loadSampleData() async {

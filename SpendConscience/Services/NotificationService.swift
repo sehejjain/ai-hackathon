@@ -489,7 +489,7 @@ class NotificationService: ObservableObject {
         }
         
         // Check notification history to prevent duplicates
-        let historyKey = "\(budget.id.uuidString)_warning"
+        let _ = "\(budget.id.uuidString)_warning"
         return !hasRecentNotification(for: budget, type: "warning")
     }
     

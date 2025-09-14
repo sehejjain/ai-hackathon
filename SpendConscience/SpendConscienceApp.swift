@@ -7,13 +7,16 @@ import EventKit
 struct SpendConscienceApp: App {
     @AppStorage("permissionsChecked") private var permissionsChecked = false
     @StateObject private var permissionManager = PermissionManager()
+    @StateObject private var userManager = UserManager()
     @StateObject private var plaidService = PlaidService()
     
-    // Combined model container with both new models and Plaid integration support
-    var modelContainer: ModelContainer {
+    // Single persistent ModelContainer instance
+    private let modelContainer: ModelContainer
+    
+    init() {
         do {
-            let container = try ModelContainer(for: Transaction.self, Budget.self)
-            return container
+            let container = try ModelContainer(for: Transaction.self, Budget.self, User.self)
+            self.modelContainer = container
         } catch {
             print("Failed to initialize ModelContainer: \(error)")
 
@@ -26,11 +29,11 @@ struct SpendConscienceApp: App {
             // Attempt to create a temporary container as fallback
             do {
                 let tempContainer = try ModelContainer(
-                    for: Transaction.self, Budget.self,
+                    for: Transaction.self, Budget.self, User.self,
                     configurations: ModelConfiguration(isStoredInMemoryOnly: true)
                 )
                 print("Created temporary in-memory container as fallback")
-                return tempContainer
+                self.modelContainer = tempContainer
             } catch {
                 print("Failed to create fallback container: \(error)")
 
@@ -44,12 +47,16 @@ struct SpendConscienceApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(permissionManager)
+                .environmentObject(userManager)
                 .environmentObject(plaidService)
                 .onAppear {
                     if !permissionsChecked {
                         checkPermissionStatuses()
                         permissionsChecked = true
                     }
+                    
+                    // Set model context for user manager using the same persistent instance
+                    userManager.setModelContext(modelContainer.mainContext)
                 }
         }
         .modelContainer(modelContainer)

@@ -158,7 +158,7 @@ extension NotificationTemplate {
     /// Creates a budget overrun template for when spending exceeds the budget
     static func budgetOverrunTemplate(for budget: Budget) -> NotificationTemplate {
         let overrunAmount = budget.currentSpent - budget.monthlyLimit
-        let categoryIcon = budget.category.systemIcon
+        let _ = budget.category.systemIcon
         
         let content = TemplateContent(
             titleTemplate: "🚨 Budget Exceeded: {categoryName}",
@@ -218,7 +218,7 @@ extension NotificationTemplate {
     
     /// Generates recommendation content based on type
     private static func recommendationContent(for type: RecommendationType, budget: Budget) -> (String, String) {
-        let categoryIcon = budget.category.systemIcon
+        let _ = budget.category.systemIcon
         
         switch type {
         case .reduceSpending:

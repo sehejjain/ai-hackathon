@@ -12,53 +12,60 @@ import UIKit
 #endif
 
 struct BudgetDashboardView: View {
-    @ObservedObject var dataManager: DataManager
+    @EnvironmentObject var dataManager: DataManager
+    @Environment(\.navigate) var navigate
     let onAddBudget: (() -> Void)?
     @State private var isRefreshing = false
     
-    init(dataManager: DataManager, onAddBudget: (() -> Void)? = nil) {
-        self.dataManager = dataManager
+    init(onAddBudget: (() -> Void)? = nil) {
         self.onAddBudget = onAddBudget
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            ScrollView {
-                LazyVStack(spacing: 20) {
-                    // Status Overview Section
-                    statusOverviewSection
-                    
-                    // Budget Progress Section
-                    budgetProgressSection(geometry: geometry)
-                    
-                    // Spending Analysis Section
-                    spendingAnalysisSection
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-            }
-            .refreshable {
-                await refreshData()
-            }
-        }
-        .navigationTitle("Budget Dashboard")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    Task {
-                        await refreshData()
+        ZStack {
+            GeometryReader { geometry in
+                ScrollView {
+                    LazyVStack(spacing: 20) {
+                        // Status Overview Section
+                        statusOverviewSection
+                        
+                        // Budget Progress Section
+                        budgetProgressSection(geometry: geometry)
+                        
+                        // Spending Analysis Section
+                        spendingAnalysisSection
                     }
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.primary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16) // Reduced padding, FAB will handle safe area
                 }
-                .disabled(isRefreshing)
+                .refreshable {
+                    await refreshData()
+                }
             }
-        }
-        .overlay {
-            if dataManager.isLoading && dataManager.budgets.isEmpty {
-                loadingView
+            .overlay {
+                if dataManager.isLoading && dataManager.budgets.isEmpty {
+                    loadingView
+                }
+            }
+            
+            // Floating Action Button positioned at bottom-right
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    let isBlockingLoad = dataManager.isLoading && dataManager.budgets.isEmpty
+                    FloatingActionButton {
+                        navigateToAIAssistant(navigate)
+                    }
+                    .padding(.trailing, 16)
+                    .disabled(isBlockingLoad)
+                    .opacity(isBlockingLoad ? 0 : 1)
+                    .accessibilityHidden(isBlockingLoad)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: 16)
             }
         }
     }
@@ -244,22 +251,22 @@ struct BudgetDashboardView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
             
-            Button(action: {
-                onAddBudget?()
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Add Budget")
+            if let onAddBudget = onAddBudget {
+                Button(action: onAddBudget) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Add Budget")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.accentColor)
+                    .cornerRadius(25)
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(Color.accentColor)
-                .cornerRadius(25)
+                .accessibilityLabel("Add your first budget")
+                .accessibilityHint("Tap to create a new budget")
             }
-            .accessibilityLabel("Add your first budget")
-            .accessibilityHint("Tap to create a new budget")
         }
         .padding(.vertical, 40)
         .frame(maxWidth: .infinity)
@@ -291,18 +298,7 @@ struct BudgetDashboardView: View {
     // MARK: - Supporting Views
     
     private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-            
-            Text("Loading Dashboard...")
-                .font(.headline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Loading budget dashboard")
+        LoadingPlaceholderView(title: "Loading Dashboard...")
     }
     
     private func errorView(error: Error) -> some View {
@@ -415,24 +411,29 @@ struct BudgetDashboardView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             // Preview with data
-            BudgetDashboardView(dataManager: previewDataManager())
+            BudgetDashboardView()
+                .environmentObject(previewDataManager())
                 .previewDisplayName("With Data")
             
             // Preview with empty state
-            BudgetDashboardView(dataManager: emptyDataManager())
+            BudgetDashboardView()
+                .environmentObject(emptyDataManager())
                 .previewDisplayName("Empty State")
             
             // Preview with loading state
-            BudgetDashboardView(dataManager: loadingDataManager())
+            BudgetDashboardView()
+                .environmentObject(loadingDataManager())
                 .previewDisplayName("Loading State")
             
             // Dark mode preview
-            BudgetDashboardView(dataManager: previewDataManager())
+            BudgetDashboardView()
+                .environmentObject(previewDataManager())
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Dark Mode")
             
             // iPad preview
-            BudgetDashboardView(dataManager: previewDataManager())
+            BudgetDashboardView()
+                .environmentObject(previewDataManager())
                 .previewDevice("iPad Pro (12.9-inch) (6th generation)")
                 .previewDisplayName("iPad")
         }

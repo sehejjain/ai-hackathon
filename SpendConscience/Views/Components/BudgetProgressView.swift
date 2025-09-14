@@ -5,6 +5,8 @@ struct BudgetProgressView: View {
     let ringSize: CGFloat
     let lineWidth: CGFloat
     
+    @Environment(\.navigate) private var navigate
+    
     init(budget: Budget, ringSize: CGFloat = 120, lineWidth: CGFloat = 8) {
         self.budget = budget
         self.ringSize = ringSize
@@ -69,92 +71,105 @@ struct BudgetProgressView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Image(systemName: budget.category.systemIcon)
-                    .foregroundColor(statusColor)
-                    .font(.title2)
-
-                Text(budget.category.displayName)
-                    .font(.headline)
-                    .fontWeight(.medium)
-
-                Spacer()
-            }
-
-            ZStack {
-                Circle()
-                    .stroke(statusColor.opacity(0.2), lineWidth: lineWidth)
-                    .frame(width: ringSize, height: ringSize)
-
-                Circle()
-                    .trim(from: 0, to: progressValue)
-                    .stroke(statusColor, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                    .frame(width: ringSize, height: ringSize)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 1.0), value: progressValue)
-
-                VStack(spacing: 4) {
-                    Text("\(displayPercent)%")
-                        .font(.title2)
-                        .fontWeight(.bold)
+        Button(action: {
+            navigate(.budgetDetail(budget))
+        }) {
+            VStack(spacing: 12) {
+                HStack {
+                    Image(systemName: budget.category.systemIcon)
                         .foregroundColor(statusColor)
+                        .font(.title2)
 
-                    Text(budget.status == .danger ? "Over Budget" : "Used")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Spent")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(formatCurrency(budget.currentSpent))
-                        .font(.caption)
+                    Text(budget.category.displayName)
+                        .font(.headline)
                         .fontWeight(.medium)
-                }
 
-                HStack {
-                    Text("Limit")
+                    Spacer()
+                    
+                    // Visual indicator that the view is tappable
+                    Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Spacer()
-                    Text(formatCurrency(budget.monthlyLimit))
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .opacity(0.6)
                 }
 
-                Divider()
+                ZStack {
+                    Circle()
+                        .stroke(statusColor.opacity(0.2), lineWidth: lineWidth)
+                        .frame(width: ringSize, height: ringSize)
 
-                HStack {
-                    Text(budget.isOverBudget ? "Over by" : "Remaining")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(budget.isOverBudget ? formatCurrency(overByAmount) : formatCurrency(budget.remainingAmount))
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(budget.isOverBudget ? .red : .primary)
+                    Circle()
+                        .trim(from: 0, to: progressValue)
+                        .stroke(statusColor, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                        .frame(width: ringSize, height: ringSize)
+                        .rotationEffect(.degrees(-90))
+                        .animation(.easeInOut(duration: 1.0), value: progressValue)
+
+                    VStack(spacing: 4) {
+                        Text("\(displayPercent)%")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(statusColor)
+
+                        Text(budget.status == .danger ? "Over Budget" : "Used")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
+
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("Spent")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(formatCurrency(budget.currentSpent))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+
+                    HStack {
+                        Text("Limit")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(formatCurrency(budget.monthlyLimit))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Text(budget.isOverBudget ? "Over by" : "Remaining")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(budget.isOverBudget ? formatCurrency(overByAmount) : formatCurrency(budget.remainingAmount))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(budget.isOverBudget ? .red : .primary)
+                    }
+                }
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 4)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: statusColor.opacity(0.1), radius: 4, x: 0, y: 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(statusColor.opacity(0.3), lineWidth: 1)
+            )
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .shadow(color: statusColor.opacity(0.1), radius: 4, x: 0, y: 2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(statusColor.opacity(0.3), lineWidth: 1)
-        )
+        .buttonStyle(PlainButtonStyle())
         .animation(.easeInOut(duration: 0.35), value: budget.status)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel(accessibilityLabel + " Tap to view budget details")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Tap to view detailed budget information")
     }
 }
 
