@@ -23,50 +23,48 @@ struct AIFinancialAssistantView: View {
     ]
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                headerView
-                
-                // Content
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Connection Status
-                        connectionStatusView
-                        
-                        // Response Section
-                        if let response = apiService.currentResponse {
-                            responseView(response)
-                        } else if apiService.currentError != nil {
-                            errorView
-                        } else {
-                            welcomeView
-                        }
-                        
-                        // Quick Questions
-                        quickQuestionsView
+        VStack(spacing: 0) {
+            // Header
+            headerView
+
+            // Content
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Connection Status
+                    connectionStatusView
+
+                    // Response Section
+                    if let response = apiService.currentResponse {
+                        responseView(response)
+                    } else if apiService.currentError != nil {
+                        errorView
+                    } else {
+                        welcomeView
                     }
-                    .padding()
+
+                    // Quick Questions
+                    quickQuestionsView
                 }
-                
-                // Input Section
-                inputView
+                .padding()
             }
-            .navigationTitle("AI Financial Assistant")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        Task { await apiService.testConnection() }
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .disabled(apiService.isLoading)
+
+            // Input Section
+            inputView
+        }
+        .navigationTitle("AI Financial Assistant")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    Task { await apiService.testConnection() }
+                }) {
+                    Image(systemName: "arrow.clockwise")
                 }
+                .disabled(apiService.isLoading)
             }
-            .onAppear {
-                Task { await apiService.testConnection() }
-            }
+        }
+        .onAppear {
+            Task { await apiService.testConnection() }
         }
     }
     
@@ -420,5 +418,7 @@ struct AIFinancialAssistantView: View {
 // MARK: - Preview
 
 #Preview {
-    AIFinancialAssistantView()
+    NavigationView {
+        AIFinancialAssistantView()
+    }
 }

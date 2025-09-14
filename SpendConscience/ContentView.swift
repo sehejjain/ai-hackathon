@@ -1,43 +1,13 @@
 import SwiftUI
 import SwiftData
-import EventKit
-import UserNotifications
 import os.log
 
-// MARK: - Navigation Destination Enum
-
-fileprivate enum Destination {
-    case budgetDashboard
-}
-
-// MARK: - Permission Status Enum
-
-enum PermissionStatus {
-    case notification(UNAuthorizationStatus)
-    case calendar(EKAuthorizationStatus)
-    
-    var isGranted: Bool {
-        switch self {
-        case .notification(let status):
-            return status == .authorized || status == .provisional
-        case .calendar(let status):
-            if #available(iOS 17.0, *) {
-                return status == .fullAccess || status == .writeOnly
-            } else {
-                return status == .authorized
-            }
-        }
-    }
-}
-
 struct ContentView: View {
-    @EnvironmentObject private var permissionManager: PermissionManager
     @EnvironmentObject private var userManager: UserManager
     @Environment(\.modelContext) private var modelContext
     @State private var dataManager: DataManager?
-    @State private var showPermissionSheet = false
-    @State private var showAIAssistant = false
     @State private var navigationPath = NavigationPath()
+    @State private var initError: Error?
     
     // App-level dark mode control
     @AppStorage("darkModeEnabled") var darkModeEnabled = false
@@ -61,73 +31,91 @@ struct ContentView: View {
                 MainTabView()
                     .environmentObject(userManager)
                     .environmentObject(dataManager)
-            } else {
-                VStack(spacing: 24) {
-                    Text("SpendConscience")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                    .environment(\.navigate) { destination in
+                        navigationPath.append(destination)
+                    }
+            } else if let error = initError {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.red)
 
-                    Text("Your AI Financial Assistant")
-                        .font(.subheadline)
+                    Text("Initialization Error")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+
+                    Text("Failed to initialize data manager. Please restart the app.")
+                        .font(.body)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
 
-                    Spacer()
-
-                    Button("Get Started") {
-                        if permissionManager.needsPermissions {
-                            showPermissionSheet = true
-                        }
+                    Button("Retry") {
+                        initError = nil
+                        initializeDataManager()
                     }
                     .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-
-                    Spacer()
                 }
-            }
-        }
-        .padding()
-        .navigationTitle("Budget Overview")
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showPermissionSheet) {
-            PermissionRequestView()
-                .environmentObject(permissionManager)
-        }
-        .sheet(isPresented: $showAIAssistant) {
-            if let dataManager = dataManager {
-                AIFinancialAssistantView()
-                    .environmentObject(userManager)
-                    .environmentObject(dataManager)
+                .padding()
+            } else {
+                LoadingPlaceholderView(title: "SpendConscience", subtitle: "Your AI Financial Assistant")
             }
         }
         .navigationDestination(for: Destination.self) { destination in
-            switch destination {
-            case .budgetDashboard:
-                if let dataManager = dataManager {
-                    BudgetDashboardView()
+            if let dataManager = dataManager {
+                switch destination {
+                case .aiAssistant:
+                    AIFinancialAssistantView()
+                
+                case .budgetDetail(let budget):
+                    BudgetDetailView(budgetID: budget.id)
                         .environmentObject(dataManager)
-                } else {
-                    Text("Loading...")
-                        .navigationTitle("Budget Dashboard")
+                        .environmentObject(userManager)
+                
+                case .transactionDetail(let transaction):
+                    TransactionDetailView(transactionID: transaction.id)
+                        .environmentObject(dataManager)
+                        .environmentObject(userManager)
+                
+                case .transactionEdit(let transaction):
+                    TransactionEditView(transaction: transaction, dataManager: dataManager) {
+                        // Handle dismiss
+                    }
+                    .environmentObject(userManager)
+                
+                case .transactionHistory:
+                    TransactionHistoryView()
+                        .environmentObject(dataManager)
+                        .environmentObject(userManager)
+                
+                case .expenses:
+                    ExpensesView()
+                        .environmentObject(dataManager)
+                        .environmentObject(userManager)
+                
+                case .profile:
+                    ProfileView()
+                        .environmentObject(userManager)
+                        .environmentObject(dataManager)
                 }
+            } else {
+                Text("Loading...")
+                    .navigationTitle("Loading")
             }
         }
         .onAppear {
             if userManager.isAuthenticated && dataManager == nil {
                 initializeDataManager()
             }
-            if permissionManager.needsPermissions {
-                showPermissionSheet = true
-            }
         }
         .onChange(of: userManager.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated {
+                initError = nil
                 initializeDataManager()
-                if permissionManager.needsPermissions {
-                    showPermissionSheet = true
-                }
+                navigationPath = NavigationPath()
             } else {
                 dataManager = nil
+                initError = nil
+                navigationPath = NavigationPath()
             }
         }
     }
@@ -136,141 +124,18 @@ struct ContentView: View {
     
     private func initializeDataManager() {
         if dataManager == nil {
-            dataManager = DataManager(modelContext: modelContext)
-            logger.info("DataManager initialized successfully")
-        }
-    }
-}
-
-// MARK: - Permission Request Sheet
-
-struct PermissionRequestView: View {
-    @EnvironmentObject private var permissionManager: PermissionManager
-    @Environment(\.dismiss) private var dismiss
-    @State private var isRequesting = false
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                VStack(spacing: 16) {
-                    Image(systemName: "shield.checkered")
-                        .font(.system(size: 60))
-                        .foregroundColor(.blue)
-                    
-                    Text("Enable Smart Budget Features")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("To provide the best budgeting experience, SpendConscience needs access to:")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                
-                VStack(spacing: 16) {
-                    PermissionItemView(
-                        icon: "calendar",
-                        title: "Calendar Access",
-                        description: "Create budget reminders and analyze upcoming events for better spending predictions",
-                        status: .calendar(permissionManager.calendarStatus)
-                    )
-                    
-                    PermissionItemView(
-                        icon: "bell",
-                        title: "Notifications",
-                        description: "Receive timely alerts about budget limits and spending recommendations",
-                        status: .notification(permissionManager.notificationStatus)
-                    )
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 12) {
-                    Button(action: requestPermissions) {
-                        HStack {
-                            if isRequesting {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(0.8)
-                            }
-                            Text(isRequesting ? "Requesting..." : "Grant Permissions")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(isRequesting)
-                    
-                    Button("Maybe Later") {
-                        dismiss()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.secondary)
-                }
-            }
-            .padding()
-            .navigationTitle("Permissions")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Skip") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-    
-    private func requestPermissions() {
-        isRequesting = true
-        Task {
-            await permissionManager.requestPermissions()
-            await MainActor.run {
-                isRequesting = false
-                dismiss()
+            do {
+                dataManager = DataManager(modelContext: modelContext)
+                logger.info("DataManager initialized successfully")
+            } catch {
+                initError = error
+                logger.error("Failed to initialize DataManager: \(error.localizedDescription)")
             }
         }
     }
 }
-
-// MARK: - Permission Item View
-
-struct PermissionItemView: View {
-    let icon: String
-    let title: String
-    let description: String
-    let status: PermissionStatus
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.blue)
-                .frame(width: 30)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.leading)
-            }
-            
-            Spacer()
-            
-            Image(systemName: status.isGranted ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(status.isGranted ? .green : .gray)
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
 
 #Preview {
     ContentView()
-        .environmentObject(PermissionManager())
+        .environmentObject(UserManager())
 }

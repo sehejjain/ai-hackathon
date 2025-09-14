@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SwiftDataTransactionRowView: View {
     let transaction: Transaction
+    
+    @Environment(\.navigate) private var navigate
 
     var body: some View {
         HStack(spacing: 12) {
@@ -12,8 +14,18 @@ struct SwiftDataTransactionRowView: View {
             Spacer()
 
             amountDisplay
+            
+            // Visual indicator that the row is interactive
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .opacity(0.6)
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            navigate(.transactionDetail(transaction))
+        }
     }
 
     private var categoryIcon: some View {

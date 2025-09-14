@@ -3,6 +3,7 @@ import SwiftData
 
 struct TransactionHistoryView: View {
     @EnvironmentObject var dataManager: DataManager
+    @Environment(\.navigate) private var navigate
     @State private var viewModel: TransactionHistoryViewModel?
     @State private var showingEditView = false
     @State private var selectedTransaction: Transaction?
@@ -149,37 +150,45 @@ struct TransactionHistoryView: View {
             if viewModel.filteredTransactions.isEmpty {
                 EmptyStateView(hasFilters: viewModel.hasActiveFilters)
             } else {
-                List {
-                    ForEach(viewModel.sortedGroupDisplayStrings, id: \.self) { groupName in
-                        Section(header: Text(groupName)) {
-                            ForEach(viewModel.groupedTransactions[groupName] ?? [], id: \.id) { transaction in
-                                SwiftDataTransactionRowView(transaction: transaction)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        selectedTransaction = transaction
-                                    }
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                        Button("Delete") {
-                                            transactionToDelete = transaction
-                                            showingDeleteConfirmation = true
-                                        }
-                                        .tint(.red)
+                transactionsListContent(viewModel: viewModel)
+            }
+        }
+    }
 
-                                        Button("Edit") {
-                                            selectedTransaction = transaction
-                                        }
-                                        .tint(.blue)
-                                    }
-                            }
-                        }
+    private func transactionsListContent(viewModel: TransactionHistoryViewModel) -> some View {
+        List {
+            ForEach(viewModel.sortedGroupDisplayStrings, id: \.self) { groupName in
+                Section(header: Text(groupName)) {
+                    ForEach(viewModel.groupedTransactions[groupName] ?? [], id: \.id) { transaction in
+                        transactionRow(transaction: transaction)
                     }
-                }
-                .listStyle(InsetGroupedListStyle())
-                .refreshable {
-                    await viewModel.dataManager.loadAllData()
                 }
             }
         }
+        .listStyle(InsetGroupedListStyle())
+        .refreshable {
+            await viewModel.dataManager.loadAllData()
+        }
+    }
+
+    private func transactionRow(transaction: Transaction) -> some View {
+        SwiftDataTransactionRowView(transaction: transaction)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                navigate(.transactionDetail(transaction))
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button("Delete") {
+                    transactionToDelete = transaction
+                    showingDeleteConfirmation = true
+                }
+                .tint(.red)
+
+                Button("Edit") {
+                    selectedTransaction = transaction
+                }
+                .tint(.blue)
+            }
     }
 }
 

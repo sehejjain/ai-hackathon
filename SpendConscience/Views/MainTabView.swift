@@ -16,43 +16,37 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             // Home Tab - Budget Dashboard
-            NavigationStack {
-                BudgetDashboardView()
-                    .environmentObject(dataManager)
-                    .environment(\.modelContext, modelContext)
-                    .navigationTitle("Budget Dashboard")
-                    .navigationBarTitleDisplayMode(.large)
-            }
-            .tabItem {
-                Image(systemName: "house.fill")
-                Text("Home")
-            }
-            .accessibilityLabel("Home tab, Budget Dashboard")
+            BudgetDashboardView()
+                .environmentObject(dataManager)
+                .environment(\.modelContext, modelContext)
+                .navigationTitle("Budget Dashboard")
+                .navigationBarTitleDisplayMode(.large)
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Home")
+                }
+                .accessibilityLabel("Home tab, Budget Dashboard")
             
             // Expenses Tab - Unified Expenses View
-            NavigationStack {
-                ExpensesView()
-                    .environmentObject(dataManager)
-                    .environment(\.modelContext, modelContext)
-            }
-            .tabItem {
-                Image(systemName: "creditcard.fill")
-                Text("Expenses")
-            }
-            .accessibilityLabel("Expenses tab, Transaction History and Analysis")
+            ExpensesView()
+                .environmentObject(dataManager)
+                .environment(\.modelContext, modelContext)
+                .tabItem {
+                    Image(systemName: "creditcard.fill")
+                    Text("Expenses")
+                }
+                .accessibilityLabel("Expenses tab, Transaction History and Analysis")
             
             // Profile Tab
-            NavigationStack {
-                ProfileView()
-                    .environmentObject(userManager)
-                    .navigationTitle("Profile")
-                    .navigationBarTitleDisplayMode(.large)
-            }
-            .tabItem {
-                Image(systemName: "person.fill")
-                Text("Profile")
-            }
-            .accessibilityLabel("Profile tab, User Settings")
+            ProfileView()
+                .environmentObject(userManager)
+                .navigationTitle("Profile")
+                .navigationBarTitleDisplayMode(.large)
+                .tabItem {
+                    Image(systemName: "person.fill")
+                    Text("Profile")
+                }
+                .accessibilityLabel("Profile tab, User Settings")
         }
         .tabViewStyle(.automatic)
     }

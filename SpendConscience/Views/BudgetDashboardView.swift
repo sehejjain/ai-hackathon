@@ -13,6 +13,7 @@ import UIKit
 
 struct BudgetDashboardView: View {
     @EnvironmentObject var dataManager: DataManager
+    @Environment(\.navigate) var navigate
     let onAddBudget: (() -> Void)?
     @State private var isRefreshing = false
     
@@ -21,28 +22,50 @@ struct BudgetDashboardView: View {
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            ScrollView {
-                LazyVStack(spacing: 20) {
-                    // Status Overview Section
-                    statusOverviewSection
-                    
-                    // Budget Progress Section
-                    budgetProgressSection(geometry: geometry)
-                    
-                    // Spending Analysis Section
-                    spendingAnalysisSection
+        ZStack {
+            GeometryReader { geometry in
+                ScrollView {
+                    LazyVStack(spacing: 20) {
+                        // Status Overview Section
+                        statusOverviewSection
+                        
+                        // Budget Progress Section
+                        budgetProgressSection(geometry: geometry)
+                        
+                        // Spending Analysis Section
+                        spendingAnalysisSection
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16) // Reduced padding, FAB will handle safe area
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .refreshable {
+                    await refreshData()
+                }
             }
-        .refreshable {
-            await refreshData()
-        }
-    }
-    .overlay {
-            if dataManager.isLoading && dataManager.budgets.isEmpty {
-                loadingView
+            .overlay {
+                if dataManager.isLoading && dataManager.budgets.isEmpty {
+                    loadingView
+                }
+            }
+            
+            // Floating Action Button positioned at bottom-right
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    let isBlockingLoad = dataManager.isLoading && dataManager.budgets.isEmpty
+                    FloatingActionButton {
+                        navigateToAIAssistant(navigate)
+                    }
+                    .padding(.trailing, 16)
+                    .disabled(isBlockingLoad)
+                    .opacity(isBlockingLoad ? 0 : 1)
+                    .accessibilityHidden(isBlockingLoad)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: 16)
             }
         }
     }
@@ -275,18 +298,7 @@ struct BudgetDashboardView: View {
     // MARK: - Supporting Views
     
     private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-            
-            Text("Loading Dashboard...")
-                .font(.headline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Loading budget dashboard")
+        LoadingPlaceholderView(title: "Loading Dashboard...")
     }
     
     private func errorView(error: Error) -> some View {

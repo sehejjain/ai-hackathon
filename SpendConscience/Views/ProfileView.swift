@@ -61,45 +61,10 @@ struct ProfileView: View {
                 }
                 .padding(.top, 20)
                 
-                // Permission Request Card (shown when permissions are needed)
-                if permissionManager.needsPermissions {
-                    GroupBox {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.orange)
-                                    .font(.title3)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Permissions Needed")
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
-                                    
-                                    Text("Enable smart budget features and notifications")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                            }
-                            
-                            Button(action: {
-                                showPermissionSheet = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "shield.checkered")
-                                    Text("Grant Permissions")
-                                        .fontWeight(.medium)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.orange)
-                        }
-                        .padding(.vertical, 8)
-                    }
-                    .padding(.horizontal)
-                    .accessibilityLabel("Permission request card")
+                // Permission Status Card - Comprehensive permission management
+                VStack(spacing: 16) {
+                    PermissionStatusCard(showPermissionSheet: $showPermissionSheet)
+                        .padding(.horizontal)
                 }
                 
                 // Profile Sections
@@ -317,9 +282,11 @@ struct ProfileView: View {
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.large)
+        .task {
+            await permissionManager.checkAllPermissionStatuses()
+        }
         .sheet(isPresented: $showPermissionSheet) {
             PermissionRequestView()
-                .environmentObject(permissionManager)
         }
         .sheet(isPresented: $showPrivacySheet) {
             PrivacySettingsView()
