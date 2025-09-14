@@ -400,19 +400,19 @@
 				DEVELOPMENT_TEAM = H4X26UKF8L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "SpendConscience needs full calendar access to analyze your upcoming events for budget planning and to create spending alerts and reminders.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "SpendConscience needs calendar access to help you budget for upcoming events and prevent overspending by analyzing your scheduled activities.";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "SpendConscience needs to create budget reminders and spending alerts in your calendar to help you stay on track with your financial goals.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "SpendConscience uses Face ID to securely access your financial data and budget information.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SpendConscience needs network access to securely connect to your bank through Plaid for transaction data.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "SpendConscience creates reminders to help you stay on track with your budget goals and spending limits.";
+				INFOPLIST_KEY_NSSiriUsageDescription = "SpendConscience integrates with Siri so you can check your budget status and get spending advice using voice commands.";
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "SpendConscience sends notifications to warn you about potential budget overruns and provide timely spending guidance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				"INFOPLIST_KEY_NSCalendarsUsageDescription" = "SpendConscience needs calendar access to help you budget for upcoming events and prevent overspending by analyzing your scheduled activities.";
-				"INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription" = "SpendConscience needs to create budget reminders and spending alerts in your calendar to help you stay on track with your financial goals.";
-				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription" = "SpendConscience needs full calendar access to analyze your upcoming events for budget planning and to create spending alerts and reminders.";
-				"INFOPLIST_KEY_NSRemindersUsageDescription" = "SpendConscience creates reminders to help you stay on track with your budget goals and spending limits.";
-				"INFOPLIST_KEY_NSUserNotificationsUsageDescription" = "SpendConscience sends notifications to warn you about potential budget overruns and provide timely spending guidance.";
-				"INFOPLIST_KEY_NSSiriUsageDescription" = "SpendConscience integrates with Siri so you can check your budget status and get spending advice using voice commands.";
-				"INFOPLIST_KEY_NSFaceIDUsageDescription" = "SpendConscience uses Face ID to securely access your financial data and budget information.";
-				"INFOPLIST_KEY_NSLocalNetworkUsageDescription" = "SpendConscience needs network access to securely connect to your bank through Plaid for transaction data.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -436,19 +436,19 @@
 				DEVELOPMENT_TEAM = H4X26UKF8L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "SpendConscience needs full calendar access to analyze your upcoming events for budget planning and to create spending alerts and reminders.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "SpendConscience needs calendar access to help you budget for upcoming events and prevent overspending by analyzing your scheduled activities.";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "SpendConscience needs to create budget reminders and spending alerts in your calendar to help you stay on track with your financial goals.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "SpendConscience uses Face ID to securely access your financial data and budget information.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SpendConscience needs network access to securely connect to your bank through Plaid for transaction data.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "SpendConscience creates reminders to help you stay on track with your budget goals and spending limits.";
+				INFOPLIST_KEY_NSSiriUsageDescription = "SpendConscience integrates with Siri so you can check your budget status and get spending advice using voice commands.";
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "SpendConscience sends notifications to warn you about potential budget overruns and provide timely spending guidance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				"INFOPLIST_KEY_NSCalendarsUsageDescription" = "SpendConscience needs calendar access to help you budget for upcoming events and prevent overspending by analyzing your scheduled activities.";
-				"INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription" = "SpendConscience needs to create budget reminders and spending alerts in your calendar to help you stay on track with your financial goals.";
-				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription" = "SpendConscience needs full calendar access to analyze your upcoming events for budget planning and to create spending alerts and reminders.";
-				"INFOPLIST_KEY_NSRemindersUsageDescription" = "SpendConscience creates reminders to help you stay on track with your budget goals and spending limits.";
-				"INFOPLIST_KEY_NSUserNotificationsUsageDescription" = "SpendConscience sends notifications to warn you about potential budget overruns and provide timely spending guidance.";
-				"INFOPLIST_KEY_NSSiriUsageDescription" = "SpendConscience integrates with Siri so you can check your budget status and get spending advice using voice commands.";
-				"INFOPLIST_KEY_NSFaceIDUsageDescription" = "SpendConscience uses Face ID to securely access your financial data and budget information.";
-				"INFOPLIST_KEY_NSLocalNetworkUsageDescription" = "SpendConscience needs network access to securely connect to your bank through Plaid for transaction data.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

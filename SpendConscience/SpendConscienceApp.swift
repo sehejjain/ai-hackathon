@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import UserNotifications
 import EventKit
 
@@ -7,10 +8,24 @@ struct SpendConscienceApp: App {
     @AppStorage("permissionsChecked") private var permissionsChecked = false
     @StateObject private var permissionManager = PermissionManager()
     
+    private let container: ModelContainer = {
+        let schema = Schema([StoredTransaction.self, StoredAccount.self, CategoryTag.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        return try! ModelContainer(for: schema, configurations: [config])
+    }()
+
+    @StateObject private var transactionStore: TransactionStore
+
+    init() {
+        let context = ModelContext(container)
+        _transactionStore = StateObject(wrappedValue: TransactionStore(modelContext: context))
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(permissionManager)
+                .environmentObject(transactionStore)
                 .onAppear {
                     if !permissionsChecked {
                         checkPermissionStatuses()
@@ -18,6 +33,7 @@ struct SpendConscienceApp: App {
                     }
                 }
         }
+        .modelContainer(container)
     }
     
     // MARK: - Permission Status Checking (No Prompts)
