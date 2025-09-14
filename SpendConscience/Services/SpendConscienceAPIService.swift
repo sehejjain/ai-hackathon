@@ -58,11 +58,13 @@ struct FinancialQuestionRequest: Codable {
     let query: String
     let userId: String
     let accessToken: String?
-    
-    init(query: String, userId: String = "ios-user", accessToken: String? = nil) {
+    let calendarEvents: [CalendarEventData]?
+
+    init(query: String, userId: String = "ios-user", accessToken: String? = nil, calendarEvents: [CalendarEventData]? = nil) {
         self.query = query
         self.userId = userId
         self.accessToken = accessToken
+        self.calendarEvents = calendarEvents
     }
 }
 
@@ -96,19 +98,20 @@ enum SpendConscienceAPIError: Error, LocalizedError {
 /// Main service class for interacting with the SpendConscience API
 @MainActor
 class SpendConscienceAPIService: ObservableObject {
-    
+
     // MARK: - Published Properties
-    
+
     @Published var isLoading: Bool = false
     @Published var currentResponse: SpendConscienceData?
     @Published var currentError: SpendConscienceAPIError?
     @Published var isConnected: Bool = false
     @Published var lastQuery: String = ""
-    
+
     // MARK: - Private Properties
-    
+
     private let baseURL: String
     private let session: URLSession
+    private let calendarService: CalendarService
     private let encoder: JSONEncoder = {
         let e = JSONEncoder()
         e.keyEncodingStrategy = .convertToSnakeCase
@@ -122,20 +125,22 @@ class SpendConscienceAPIService: ObservableObject {
     private let logger = Logger(subsystem: "SpendConscience", category: "APIService")
     
     // MARK: - Initialization
-    
-    init(baseURL: String? = nil) {
+
+    init(baseURL: String? = nil, calendarService: CalendarService? = nil) {
         // Use provided URL or load from configuration
         if let baseURL = baseURL {
             self.baseURL = baseURL
         } else {
             self.baseURL = ConfigurationLoader.getString("SpendConscienceAPIURL") ?? "http://localhost:4001"
         }
-        
+
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: config)
-        
+
+        self.calendarService = calendarService ?? CalendarService()
+
         logger.info("SpendConscienceAPIService initialized with base URL: \(self.baseURL, privacy: .private)")
     }
     
@@ -178,24 +183,52 @@ class SpendConscienceAPIService: ObservableObject {
     /// Asks a financial question to the AI agents
     func askFinancialQuestion(_ query: String, userId: String = "ios-user") async -> SpendConscienceData? {
         logger.debug("Asking financial question")
-        
+
         isLoading = true
         defer { isLoading = false }
         currentError = nil
         lastQuery = query
-        
+
         do {
             guard let url = makeURL("ask") else {
                 throw SpendConscienceAPIError.invalidURL
             }
-            
-            let request = FinancialQuestionRequest(query: query, userId: userId)
+
+            // Fetch calendar events for the remaining month
+            logger.debug("📅 [APIService] About to fetch calendar events for AI context")
+            print("📅 [APIService] About to fetch calendar events for AI context")
+            let calendarEvents = await calendarService.fetchRemainingMonthEvents()
+            logger.info("📊 [APIService] Received \(calendarEvents.count) calendar events from CalendarService")
+            print("📊 [APIService] Received \(calendarEvents.count) calendar events from CalendarService")
+
+            // Log events being included in request
+            for (index, event) in calendarEvents.enumerated() {
+                logger.debug("📝 [APIService] Event \(index + 1) for API: '\(event.title)' - \(event.eventType.rawValue) - $\(String(format: "%.2f", event.estimatedCost ?? 0))")
+                print("📝 [APIService] Event \(index + 1) for API: '\(event.title)' - \(event.eventType.rawValue) - $\(String(format: "%.2f", event.estimatedCost ?? 0))")
+            }
+
+            let request = FinancialQuestionRequest(query: query, userId: userId, calendarEvents: calendarEvents)
+            logger.debug("📦 [APIService] Created request with \(calendarEvents.count) calendar events")
+            print("📦 [APIService] Created request with \(calendarEvents.count) calendar events")
+
             let requestData = try encoder.encode(request)
-            
-            // Debug: Log the request being sent
+            logger.debug("📦 [APIService] Successfully encoded request to JSON")
+            print("📦 [APIService] Successfully encoded request to JSON")
+
+            // Debug: Log the request being sent (truncated for readability)
             if let requestString = String(data: requestData, encoding: .utf8) {
-                logger.debug("Sending request: \(requestString, privacy: .public)")
-                print("🟡 DEBUG: Sending request: \(requestString)")
+                logger.debug("📤 [APIService] Sending request: \(requestString, privacy: .public)")
+                print("📤 [APIService] Request JSON length: \(requestString.count) characters")
+                // Log first part of request for debugging
+                let truncated = String(requestString.prefix(500))
+                print("📤 [APIService] Request start: \(truncated)...")
+
+                // Specifically check if calendarEvents are in the JSON
+                if requestString.contains("calendarEvents") {
+                    print("✅ [APIService] Confirmed: calendarEvents included in JSON")
+                } else {
+                    print("❌ [APIService] WARNING: calendarEvents NOT found in JSON!")
+                }
             }
             
             var urlRequest = URLRequest(url: url)
@@ -364,7 +397,7 @@ private extension SpendConscienceAPIService {
 #if DEBUG
 extension SpendConscienceAPIService {
     static let preview: SpendConscienceAPIService = {
-        let service = SpendConscienceAPIService(baseURL: "http://localhost:4001")
+        let service = SpendConscienceAPIService(baseURL: "http://localhost:4001", calendarService: CalendarService())
         service.isConnected = true
         service.currentResponse = SpendConscienceData(
             query: "Can I afford a $50 dinner?",
