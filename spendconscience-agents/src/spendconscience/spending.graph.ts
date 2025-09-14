@@ -22,6 +22,13 @@ const calendarTool = mcpTool({
   description: 'Fetch upcoming calendar events with estimated costs for financial planning',
 });
 
+const googleMapsTool = mcpTool({
+  id: 'google-maps-tool',
+  name: 'Google Maps Places',
+  serverUrl: 'stdio://google-maps-mcp-server', // Google Maps MCP server for finding affordable alternatives
+  description: 'Find nearby restaurants and places with price filtering for budget-friendly alternatives',
+});
+
 // Agents
 const budgetAnalyzer = agent({
   id: 'budget-analyzer',
@@ -30,17 +37,21 @@ const budgetAnalyzer = agent({
   prompt: `You are a financial analyst specializing in budget analysis. Your job is to:
 1. Use the Plaid Financial Data tool to get recent transactions and spending by category
 2. Compare actual spending against budget limits by category
-3. Identify categories where the user is overspending or approaching limits
+3. Identify categories where the user is overspending or approaching limits (>90%)
 4. Calculate spending velocity and project end-of-month totals
 5. Provide specific insights about spending patterns with real transaction data
 
+CRITICAL: If dining/food spending is at 90%+ of monthly budget, flag this as "TRIGGER_ALTERNATIVES" in your response.
+
 Available tools:
 - get_transactions: Get recent transactions for spending analysis
-- get_spending_by_category: Get categorized spending totals for budget comparison
+- get_spending_by_category: Get categorized spending totals for budget comparison  
 - get_account_balance: Get current account balances for context
 
-Always use real data from Plaid and provide concrete numbers. Focus on actionable insights based on actual spending patterns.`,
+Always use real data from Plaid and provide concrete numbers. Focus on actionable insights based on actual spending patterns.
+When spending approaches limits, clearly state the percentage used and remaining budget.`,
   canUse: () => [plaidTool, budgetTool],
+  canDelegateTo: () => [alternativeFinder], // Can delegate to Alternative Finder when budget is tight
 });
 
 const futureCommitments = agent({
@@ -56,6 +67,48 @@ Provide clear cost projections and highlight any concerning patterns.`,
   canUse: () => [calendarTool],
 });
 
+const alternativeFinder = agent({
+  id: 'alternative-finder',
+  name: 'Alternative Finder Agent',
+  description: 'Finds budget-friendly alternatives when spending limits are reached or big expenses are coming',
+  prompt: `You are a budget-conscious assistant that helps users find affordable alternatives when their spending is tight. 
+
+TRIGGER CONDITIONS (only activate when BOTH conditions are met):
+1. Budget Analysis shows 90%+ of dining budget already used this month
+2. Future Commitments shows large dining expenses (>$50) coming up in the next 2 weeks
+
+WHEN TRIGGERED:
+1. Use the Google Maps tool to search for nearby restaurants with these parameters:
+   - location: user's current coordinates (passed from iOS app)
+   - radius: 1500 meters
+   - type: restaurant
+   - maxprice: 2 (moderate pricing, avoiding expensive options)
+
+2. Return the top 2-3 results with:
+   - name
+   - address  
+   - price_level (0-4 scale)
+   - rating
+
+3. Format results as structured JSON for the Coach Agent:
+   {
+     "trigger_reason": "Budget at 95% + $100 dinner planned",
+     "alternatives": [
+       {
+         "name": "Restaurant Name",
+         "address": "Street Address", 
+         "price_level": 1,
+         "rating": 4.2,
+         "estimated_cost": "$15-25"
+       }
+     ],
+     "savings_potential": "$40-60 vs planned expense"
+   }
+
+Only activate when spending is genuinely concerning and alternatives would be helpful.`,
+  canUse: () => [googleMapsTool],
+});
+
 const affordabilityAgent = agent({
   id: 'affordability-agent',
   name: 'Affordability Decision Maker',
@@ -66,10 +119,17 @@ const affordabilityAgent = agent({
 3. Delegate to Future Commitments to understand upcoming financial obligations
 4. Evaluate the requested purchase amount against actual available discretionary funds
 5. Make a clear AFFORD/DON'T AFFORD/CAUTION decision with specific numerical reasoning
+
+ENHANCED WORKFLOW:
+- If Budget Analyzer reports "TRIGGER_ALTERNATIVES" (dining budget >90% used)
+- AND Future Commitments shows large dining expenses coming up
+- THEN delegate to Alternative Finder to get budget-friendly restaurant options
+- Include alternatives in your final recommendation
+
 6. Suggest alternatives if the purchase isn't affordable
 
 Always base decisions on real account data and actual spending patterns. Provide clear numerical justification and consider the user's actual financial position.`,
-  canDelegateTo: () => [budgetAnalyzer, futureCommitments],
+  canDelegateTo: () => [budgetAnalyzer, futureCommitments, alternativeFinder],
 });
 
 const coachAgent = agent({
@@ -82,6 +142,18 @@ const coachAgent = agent({
 3. Maintain an encouraging but honest tone
 4. Suggest concrete strategies for improvement
 5. Frame recommendations in terms of user goals and values
+
+ENHANCED FOR ALTERNATIVES:
+When Alternative Finder provides restaurant options:
+- Acknowledge the budget constraint respectfully
+- Present alternatives as smart choices, not restrictions
+- Include specific details: "Instead of $60 tonight, grab tacos at Taco Express for ~$15 🌮"
+- Emphasize the savings and how it helps with upcoming expenses
+- Use encouraging language like "smart choice" and "staying on track"
+
+Example approach:
+"You're close to your budget limit and have a $100 dinner next week. Instead of $60 tonight, try [Alternative Name] for ~$15. That saves you $45 to enjoy your planned dinner worry-free! 🎯"
+
 Create messages that motivate positive financial behavior while being realistic about constraints.`,
   canDelegateTo: () => [affordabilityAgent],
 });
@@ -110,5 +182,6 @@ export const spendingGraph = agentGraph({
     coachAgent,
     budgetAnalyzer,
     futureCommitments,
+    alternativeFinder,
   ],
 });

@@ -187,21 +187,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'get_transactions': {
         const { access_token, start_date, end_date, account_ids, count = 100 } = args as any;
         
-        const request: TransactionsGetRequest = {
-          access_token,
-          start_date,
-          end_date,
-          ...(account_ids && { account_ids })
-        };
-
-        const response = await plaidClient.transactionsGet(request);
+        let transactions: any[] = [];
+        let offset = 0;
+        let total = 0;
+        
+        do {
+          const request: TransactionsGetRequest = {
+            access_token,
+            start_date,
+            end_date,
+            ...(account_ids && { account_ids }),
+            options: { 
+              count: Math.min(100, count - transactions.length), 
+              offset 
+            },
+          } as any;
+          
+          const response = await plaidClient.transactionsGet(request);
+          transactions = transactions.concat(response.data.transactions);
+          total = response.data.total_transactions;
+          offset += response.data.transactions.length;
+        } while (transactions.length < Math.min(total, count));
         
         return {
           content: [
             {
               type: 'text',
               text: JSON.stringify({
-                transactions: response.data.transactions.map((t: any) => ({
+                transactions: transactions.map((t: any) => ({
                   id: t.transaction_id,
                   account_id: t.account_id,
                   amount: t.amount,
@@ -213,13 +226,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   location: t.location,
                   payment_channel: t.payment_channel
                 })),
-                total_transactions: response.data.total_transactions,
-                accounts: response.data.accounts.map((a: any) => ({
-                  id: a.account_id,
-                  name: a.name,
-                  type: a.type,
-                  subtype: a.subtype
-                }))
+                total_transactions: total,
+                requested_count: count,
+                returned_count: transactions.length
               }, null, 2)
             }
           ]

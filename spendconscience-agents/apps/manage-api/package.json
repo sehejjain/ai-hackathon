@@ -1,12 +1,14 @@
 {
   "name": "@spendconscience-agents/manage-api",
+  "private": true,
   "version": "0.1.0",
   "description": "Manage API for agents",
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "prestart": "pnpm run build",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/manage-api/src/index.js"
   },
   "dependencies": {
     "@inkeep/agents-manage-api": "^0.1.1",

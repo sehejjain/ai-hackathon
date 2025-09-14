@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import OSLog
 
 /// Response model for the SpendConscience API
 struct SpendConscienceResponse: Codable {
@@ -40,13 +41,6 @@ struct PlaidDataSummary: Codable {
     let spendingByCategory: [String: Double]
     let totalSpending: Double
     let availableFunds: Double
-    
-    enum CodingKeys: String, CodingKey {
-        case accounts
-        case spendingByCategory = "spending_by_category"
-        case totalSpending = "total_spending"
-        case availableFunds = "available_funds"
-    }
 }
 
 /// Account information from server
@@ -57,12 +51,6 @@ struct ServerAccount: Codable, Identifiable {
     let subtype: String
     let availableBalance: Double
     let currentBalance: Double
-    
-    enum CodingKeys: String, CodingKey {
-        case id, name, type, subtype
-        case availableBalance = "available_balance"
-        case currentBalance = "current_balance"
-    }
 }
 
 /// Request model for asking financial questions
@@ -121,8 +109,17 @@ class SpendConscienceAPIService: ObservableObject {
     
     private let baseURL: String
     private let session: URLSession
-    private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
+    private let encoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.keyEncodingStrategy = .convertToSnakeCase
+        return e
+    }()
+    private let decoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.keyDecodingStrategy = .convertFromSnakeCase
+        return d
+    }()
+    private let logger = Logger(subsystem: "SpendConscience", category: "APIService")
     
     // MARK: - Initialization
     
@@ -139,20 +136,20 @@ class SpendConscienceAPIService: ObservableObject {
         config.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: config)
         
-        print("🤖 SpendConscienceAPIService: Initialized with base URL: \(self.baseURL)")
+        logger.info("SpendConscienceAPIService initialized with base URL: \(self.baseURL, privacy: .private)")
     }
     
     // MARK: - Public Methods
     
     /// Tests connection to the server
     func testConnection() async {
-        print("🔍 SpendConscienceAPIService: Testing connection...")
+        logger.debug("Testing connection…")
         
         isLoading = true
         currentError = nil
         
         do {
-            guard let url = URL(string: "\(baseURL)/health") else {
+            guard let url = makeURL("health") else {
                 throw SpendConscienceAPIError.invalidURL
             }
             
@@ -164,7 +161,7 @@ class SpendConscienceAPIService: ObservableObject {
             
             if httpResponse.statusCode == 200 {
                 isConnected = true
-                print("✅ SpendConscienceAPIService: Connection successful")
+                logger.info("Connection successful")
             } else {
                 throw SpendConscienceAPIError.networkError("HTTP \(httpResponse.statusCode)")
             }
@@ -172,7 +169,7 @@ class SpendConscienceAPIService: ObservableObject {
         } catch {
             isConnected = false
             currentError = error as? SpendConscienceAPIError ?? .networkError(error.localizedDescription)
-            print("❌ SpendConscienceAPIService: Connection failed: \(error)")
+            logger.error("Connection failed: \(error.localizedDescription, privacy: .public)")
         }
         
         isLoading = false
@@ -180,19 +177,26 @@ class SpendConscienceAPIService: ObservableObject {
     
     /// Asks a financial question to the AI agents
     func askFinancialQuestion(_ query: String, userId: String = "ios-user") async -> SpendConscienceData? {
-        print("💬 SpendConscienceAPIService: Asking: \"\(query)\"")
+        logger.debug("Asking financial question")
         
         isLoading = true
+        defer { isLoading = false }
         currentError = nil
         lastQuery = query
         
         do {
-            guard let url = URL(string: "\(baseURL)/ask") else {
+            guard let url = makeURL("ask") else {
                 throw SpendConscienceAPIError.invalidURL
             }
             
             let request = FinancialQuestionRequest(query: query, userId: userId)
             let requestData = try encoder.encode(request)
+            
+            // Debug: Log the request being sent
+            if let requestString = String(data: requestData, encoding: .utf8) {
+                logger.debug("Sending request: \(requestString, privacy: .public)")
+                print("🟡 DEBUG: Sending request: \(requestString)")
+            }
             
             var urlRequest = URLRequest(url: url)
             urlRequest.httpMethod = "POST"
@@ -205,31 +209,66 @@ class SpendConscienceAPIService: ObservableObject {
                 throw SpendConscienceAPIError.invalidResponse
             }
             
-            if httpResponse.statusCode >= 400 {
-                throw SpendConscienceAPIError.networkError("HTTP \(httpResponse.statusCode)")
+            // Debug: Log the response
+            logger.debug("Response status: \(httpResponse.statusCode)")
+            print("🟡 DEBUG: Response status: \(httpResponse.statusCode)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                logger.debug("Response data: \(responseString, privacy: .public)")
+                print("🟡 DEBUG: Response data length: \(responseString.count)")
+                print("🟡 DEBUG: Response data: \(String(responseString.prefix(200)))...")
             }
             
-            let apiResponse = try decoder.decode(SpendConscienceResponse.self, from: data)
-            
-            if apiResponse.success, let data = apiResponse.data {
-                currentResponse = data
-                print("✅ SpendConscienceAPIService: Received response from \(data.agentFlow.count) agents")
-                return data
+            if 200...299 ~= httpResponse.statusCode {
+                // Debug: Check if data is empty
+                if data.isEmpty {
+                    logger.error("Received empty data despite 200 status code")
+                    print("🔴 DEBUG: Received empty data despite 200 status code")
+                    throw SpendConscienceAPIError.noData
+                }
+                
+                print("🟡 DEBUG: About to decode JSON response...")
+                let apiResponse = try decoder.decode(SpendConscienceResponse.self, from: data)
+                print("🟢 DEBUG: Successfully decoded JSON response!")
+                
+                if apiResponse.success, let data = apiResponse.data {
+                    currentResponse = data
+                    logger.info("Received response from \(data.agentFlow.count) agents")
+                    return data
+                } else {
+                    let errorMessage = apiResponse.error ?? "Unknown server error"
+                    throw SpendConscienceAPIError.serverError(errorMessage)
+                }
+            } else if 400...499 ~= httpResponse.statusCode {
+                // Client errors - usually user input related
+                if let errorData = try? decoder.decode([String: String].self, from: data),
+                   let message = errorData["error"] {
+                    throw SpendConscienceAPIError.serverError(message)
+                } else {
+                    throw SpendConscienceAPIError.serverError("Client error (HTTP \(httpResponse.statusCode))")
+                }
             } else {
-                let errorMessage = apiResponse.error ?? "Unknown server error"
-                throw SpendConscienceAPIError.serverError(errorMessage)
+                // Server errors (5xx)
+                throw SpendConscienceAPIError.networkError("Server error (HTTP \(httpResponse.statusCode))")
             }
             
+        } catch let error as DecodingError {
+            let apiError = SpendConscienceAPIError.decodingError("Failed to parse server response")
+            currentError = apiError
+            logger.error("Decoding error: \(error.localizedDescription, privacy: .public)")
+            print("🔴 DEBUG: Decoding error details: \(error)")
+            print("🔴 DEBUG: Decoding error localized: \(error.localizedDescription)")
+        } catch let error as URLError {
+            currentError = SpendConscienceAPIError.networkError(error.localizedDescription)
+            logger.error("Network error: \(error.localizedDescription, privacy: .public)")
         } catch let error as SpendConscienceAPIError {
             currentError = error
-            print("❌ SpendConscienceAPIService: Error: \(error.localizedDescription)")
+            logger.error("API error: \(error.localizedDescription, privacy: .public)")
         } catch {
-            let apiError = SpendConscienceAPIError.decodingError(error.localizedDescription)
+            let apiError = SpendConscienceAPIError.networkError(error.localizedDescription)
             currentError = apiError
-            print("❌ SpendConscienceAPIService: Decoding error: \(error)")
+            logger.error("Unexpected error: \(error.localizedDescription, privacy: .public)")
         }
         
-        isLoading = false
         return nil
     }
     
@@ -308,7 +347,15 @@ class SpendConscienceAPIService: ObservableObject {
     
     /// Logs the current service status
     func logServiceStatus() {
-        print("📊 \(serviceStatus)")
+        logger.debug("Service Status - Connected: \(self.isConnected), Loading: \(self.isLoading), Error: \(self.currentError?.localizedDescription ?? "None"), Last Query: \(self.lastQuery.isEmpty ? "None" : "Present"), Response: \(self.currentResponse != nil ? "Available" : "None")")
+    }
+}
+
+// MARK: - URL Helpers
+private extension SpendConscienceAPIService {
+    func makeURL(_ path: String) -> URL? {
+        guard let base = URL(string: baseURL) else { return nil }
+        return base.appendingPathComponent(path)
     }
 }
 

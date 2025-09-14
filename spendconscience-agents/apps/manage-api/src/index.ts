@@ -5,10 +5,14 @@ import { credentialStores } from '../../shared/credential-stores.js';
 
 const logger = getLogger('management-api');
 
+const port = process.env.MANAGE_API_PORT !== undefined
+  ? Number(process.env.MANAGE_API_PORT)
+  : 3002;
+
 // Create the Hono app
 const app = createManagementApp({
   serverConfig: {
-    port: Number(process.env.MANAGE_API_PORT) || 3002,
+    port,
     serverOptions: {
       requestTimeout: 60000,
       keepAliveTimeout: 60000,
@@ -17,8 +21,6 @@ const app = createManagementApp({
   },
   credentialStores,
 });
-
-const port = Number(process.env.MANAGE_API_PORT) || 3002;
 
 // Start the server using @hono/node-server
 serve(

@@ -10,13 +10,14 @@
     "setup": "node scripts/setup.js",
     "dev:setup": "node scripts/dev-setup.js",
     "start": "npx tsx plaid-integration-server.ts",
-    "build": "pnpm install",
+    "build": "echo 'Build completed - serverless functions ready'",
     "deploy:railway": "echo 'Deploy to Railway: Push to GitHub and Railway will auto-deploy'",
     "deploy:render": "echo 'Deploy to Render: Connect GitHub repo in Render dashboard'"
   },
   "dependencies": {
     "@inkeep/agents-core": "^0.1.0",
     "@inkeep/agents-sdk": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^1.18.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^20.19.14",

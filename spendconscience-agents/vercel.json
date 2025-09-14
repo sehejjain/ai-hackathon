@@ -1,0 +1,13 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/plaid-integration-server"
+    }
+  ],
+  "functions": {
+    "api/plaid-integration-server.ts": {
+      "maxDuration": 30
+    }
+  }
+}
