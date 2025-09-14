@@ -4,6 +4,12 @@ import EventKit
 import UserNotifications
 import os.log
 
+// MARK: - Navigation Destination Enum
+
+fileprivate enum Destination {
+    case budgetDashboard
+}
+
 // MARK: - Permission Status Enum
 
 enum PermissionStatus {
@@ -30,8 +36,8 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var dataManager: DataManager?
     @State private var showPermissionSheet = false
-    @State private var showModelContextError = false
-    @State private var modelContextErrorMessage = ""
+    @State private var showAIAssistant = false
+    @State private var navigationPath = NavigationPath()
     
     // App-level dark mode control
     @AppStorage("darkModeEnabled") var darkModeEnabled = false
@@ -50,37 +56,73 @@ struct ContentView: View {
     }
     
     private var authenticatedView: some View {
-        Group {
+        NavigationStack(path: $navigationPath) {
             if let dataManager = dataManager {
                 MainTabView()
                     .environmentObject(userManager)
                     .environmentObject(dataManager)
             } else {
-                VStack {
-                    ProgressView("Loading...")
-                        .progressViewStyle(CircularProgressViewStyle())
-                    Text("Initializing your budget data...")
+                VStack(spacing: 24) {
+                    Text("SpendConscience")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+
+                    Text("Your AI Financial Assistant")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                        .padding(.top, 8)
+                        .multilineTextAlignment(.center)
+
+                    Spacer()
+
+                    Button("Get Started") {
+                        if permissionManager.needsPermissions {
+                            showPermissionSheet = true
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+
+                    Spacer()
                 }
             }
         }
+        .padding()
+        .navigationTitle("Budget Overview")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPermissionSheet) {
             PermissionRequestView()
                 .environmentObject(permissionManager)
         }
+        .sheet(isPresented: $showAIAssistant) {
+            if let dataManager = dataManager {
+                AIFinancialAssistantView()
+                    .environmentObject(userManager)
+                    .environmentObject(dataManager)
+            }
+        }
+        .navigationDestination(for: Destination.self) { destination in
+            switch destination {
+            case .budgetDashboard:
+                if let dataManager = dataManager {
+                    BudgetDashboardView()
+                        .environmentObject(dataManager)
+                } else {
+                    Text("Loading...")
+                        .navigationTitle("Budget Dashboard")
+                }
+            }
+        }
         .onAppear {
-            initializeDataManagers()
-            // Check if permissions are needed after authentication
-            if userManager.isAuthenticated && permissionManager.needsPermissions {
+            if userManager.isAuthenticated && dataManager == nil {
+                initializeDataManager()
+            }
+            if permissionManager.needsPermissions {
                 showPermissionSheet = true
             }
         }
         .onChange(of: userManager.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated {
-                initializeDataManagers()
-                // Trigger permission request immediately after authentication
+                initializeDataManager()
                 if permissionManager.needsPermissions {
                     showPermissionSheet = true
                 }
@@ -92,45 +134,13 @@ struct ContentView: View {
     
     // MARK: - Private Methods
     
-    private func initializeDataManagers() {
-        // Initialize data managers with the available modelContext
+    private func initializeDataManager() {
         if dataManager == nil {
             dataManager = DataManager(modelContext: modelContext)
             logger.info("DataManager initialized successfully")
         }
     }
 }
-
-// MARK: - Error Banner View
-
-struct ErrorBannerView: View {
-    let message: String
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.red)
-            Text(message)
-                .font(.subheadline)
-                .foregroundColor(.primary)
-            Spacer()
-            Button("Dismiss") {
-                onDismiss()
-            }
-            .font(.caption)
-            .foregroundColor(.blue)
-        }
-        .padding()
-        .background(Color.red.opacity(0.1))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.red.opacity(0.3), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-}
-
 
 // MARK: - Permission Request Sheet
 
