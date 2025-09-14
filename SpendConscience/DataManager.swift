@@ -214,8 +214,8 @@ class DataManager: ObservableObject {
     // MARK: - Budget Analysis
 
     private func updateBudgetForTransaction(_ transaction: Transaction) async {
-        guard transaction.amount > 0 else { return } // Only count positive amounts (debits) towards budget
-
+        guard transaction.amount > 0 else { return } // Only count positive amounts (spending/debits) towards budget, as per Transaction model
+        
         if let budgetIndex = budgets.firstIndex(where: { $0.category == transaction.category }) {
             await MainActor.run {
                 budgets[budgetIndex].updateSpentAmount(by: transaction.amount)

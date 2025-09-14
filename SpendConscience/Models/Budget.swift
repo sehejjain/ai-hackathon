@@ -3,7 +3,6 @@ import SwiftData
 
 @Model
 final class Budget: Identifiable, Hashable {
-    #Index<Budget>([\.categoryRaw])
     enum BudgetError: Error {
         case invalidMonthlyLimit
         case invalidAlertThreshold

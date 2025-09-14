@@ -69,7 +69,7 @@ final class Transaction: Identifiable, Hashable {
     }
 
     var transactionType: TransactionType {
-        return amount < 0 ? .credit : .debit
+        return amount < 0 ? .debit : .credit
     }
 
     enum TransactionType {
