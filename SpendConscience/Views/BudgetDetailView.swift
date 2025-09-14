@@ -57,7 +57,7 @@ struct BudgetDetailView: View {
             loadBudget()
         }
         .sheet(isPresented: $showingEditSheet) {
-            if let budget = budget {
+            if let _ = budget {
                 // TODO: Create BudgetEditView
                 Text("Edit Budget View")
                     .navigationTitle("Edit Budget")

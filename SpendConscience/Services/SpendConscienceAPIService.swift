@@ -156,7 +156,7 @@ class SpendConscienceAPIService: ObservableObject {
                 throw SpendConscienceAPIError.invalidURL
             }
             
-            let (data, response) = try await session.data(from: url)
+            let (_, response) = try await session.data(from: url)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw SpendConscienceAPIError.invalidResponse

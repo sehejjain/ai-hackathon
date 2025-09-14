@@ -34,7 +34,7 @@ struct ContentView: View {
                     .environment(\.navigate) { destination in
                         navigationPath.append(destination)
                     }
-            } else if let error = initError {
+            } else if let _ = initError {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 40))
