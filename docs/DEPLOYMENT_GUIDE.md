@@ -39,13 +39,15 @@ cd /Users/sehej/Projects/ai-hackathon/spendconscience-agents
 
 #### 4. Configure Environment Variables
 In Railway dashboard > Settings > Variables, add:
-```
+```env
 NODE_ENV=production
 PORT=4001
 ENVIRONMENT=production
 PLAID_ENVIRONMENT=sandbox
 ANTHROPIC_API_KEY=your_key_here
 OPENAI_API_KEY=your_key_here
+PLAID_CLIENT_ID=your_client_id
+PLAID_SECRET=your_secret
 ```
 
 #### 5. Set Build Configuration
@@ -92,12 +94,14 @@ In Railway dashboard > Settings > Build:
 
 #### 4. Set Environment Variables
 Add these in Render dashboard > Environment:
-```
+```env
 NODE_ENV=production
 ENVIRONMENT=production
 PLAID_ENVIRONMENT=sandbox
 ANTHROPIC_API_KEY=your_key_here
 OPENAI_API_KEY=your_key_here
+PLAID_CLIENT_ID=your_client_id
+PLAID_SECRET=your_secret
 ```
 
 #### 5. Deploy

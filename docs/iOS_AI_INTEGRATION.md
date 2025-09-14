@@ -40,6 +40,15 @@ iOS App → SpendConscience API Server → Inkeep Agents → Plaid Data
 - Default: `http://localhost:4001`
 - Automatic connection testing and status monitoring
 
+> Note: For simulator/device testing with `http://localhost`, add dev‑only ATS exceptions in Info.plist:
+```xml
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsArbitraryLoads</key><true/>
+</dict>
+```
+Prefer HTTPS in production and remove this for release builds.
+
 ### Data Models
 - `SpendConscienceResponse` - API response structure
 - `AgentFlowStep` - Tracks which agents participate in decisions

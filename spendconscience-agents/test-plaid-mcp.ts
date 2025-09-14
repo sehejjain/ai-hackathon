@@ -5,9 +5,7 @@
  * This runs the MCP server and tests its functionality
  */
 
-import { spawn } from 'child_process';
-import { readFileSync } from 'fs';
-import path from 'path';
+import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
 
 async function testPlaidMCP() {
   console.log('🏦 Starting Plaid MCP Server Test...\n');
@@ -61,7 +59,7 @@ async function testPlaidMCP() {
   });
 }
 
-function testMCPCommunication(mcpServer: any) {
+function testMCPCommunication(mcpServer: ChildProcessWithoutNullStreams) {
   console.log('🧪 Testing MCP Communication...\n');
 
   // Test 1: List available tools
@@ -122,6 +120,10 @@ function testMCPCommunication(mcpServer: any) {
     
     console.log('🔗 To connect to agents, the MCP server should run on: stdio://');
     console.log('   The agents will communicate via stdin/stdout JSON-RPC\n');
+
+    // Cleanly terminate the MCP server so the script can exit
+    try { mcpServer.kill(); } catch {}
+    process.exit(0);
   }, 3000);
 }
 

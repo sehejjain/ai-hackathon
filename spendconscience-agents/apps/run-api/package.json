@@ -1,11 +1,14 @@
 {
   "name": "@spendconscience-agents/run-api",
+  "private": true,
   "version": "0.1.0",
   "description": "Run API for agents",
   "type": "module",
   "scripts": {
+    "build": "tsc",
+    "prestart": "npm run build",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/run-api/src/index.js"
   },
   "dependencies": {
     "@inkeep/agents-run-api": "^0.1.1",

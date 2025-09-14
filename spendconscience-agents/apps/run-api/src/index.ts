@@ -5,11 +5,14 @@ import { getLogger } from '@inkeep/agents-core';
 
 const logger = getLogger('execution-api');
 
+const port = process.env.RUN_API_PORT !== undefined
+  ? Number(process.env.RUN_API_PORT)
+  : 3003;
 
 // Create the Hono app
 const app = createExecutionApp({
   serverConfig: {
-    port: Number(process.env.RUN_API_PORT) || 3003,
+    port,
     serverOptions: {
       requestTimeout: 120000,
       keepAliveTimeout: 60000,
@@ -18,8 +21,6 @@ const app = createExecutionApp({
   },
   credentialStores,
 });
-
-const port = Number(process.env.RUN_API_PORT) || 3003;
 
 // Start the server using @hono/node-server
 serve(

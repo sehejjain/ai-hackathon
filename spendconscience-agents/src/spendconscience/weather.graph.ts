@@ -4,13 +4,13 @@ import { agent, agentGraph, mcpTool } from '@inkeep/agents-sdk';
 const forecastWeatherTool = mcpTool({
   id: 'fUI2riwrBVJ6MepT8rjx0',
   name: 'Forecast weather',
-  serverUrl: 'https://weather-forecast-mcp.vercel.app/mcp',
+  serverUrl: process.env.WEATHER_FORECAST_MCP_URL || 'https://weather-forecast-mcp.vercel.app/mcp',
 });
 
 const geocodeAddressTool = mcpTool({
   id: 'fdxgfv9HL7SXlfynPx8hf',
   name: 'Geocode address',
-  serverUrl: 'https://geocoder-mcp.vercel.app/mcp',
+  serverUrl: process.env.GEOCODER_MCP_URL || 'https://geocoder-mcp.vercel.app/mcp',
 });
 
 // Agents

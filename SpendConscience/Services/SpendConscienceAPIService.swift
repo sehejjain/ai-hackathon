@@ -183,6 +183,7 @@ class SpendConscienceAPIService: ObservableObject {
         print("💬 SpendConscienceAPIService: Asking: \"\(query)\"")
         
         isLoading = true
+        defer { isLoading = false }
         currentError = nil
         lastQuery = query
         
@@ -229,7 +230,6 @@ class SpendConscienceAPIService: ObservableObject {
             print("❌ SpendConscienceAPIService: Decoding error: \(error)")
         }
         
-        isLoading = false
         return nil
     }
     
