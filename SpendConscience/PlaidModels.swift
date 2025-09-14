@@ -7,6 +7,19 @@
 
 import Foundation
 
+// MARK: - Date Formatting
+
+private extension DateFormatter {
+    static let plaidYYYYMMDD: DateFormatter = {
+        let df = DateFormatter()
+        df.calendar = Calendar(identifier: .gregorian)
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.timeZone = TimeZone(secondsFromGMT: 0)
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }()
+}
+
 // MARK: - Transaction Model
 
 /// Represents a financial transaction from Plaid API
@@ -48,8 +61,7 @@ struct PlaidTransaction: Codable, Identifiable, Equatable {
         
         // Handle date decoding - Plaid returns dates in YYYY-MM-DD format
         let dateString = try container.decode(String.self, forKey: .date)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        let formatter = DateFormatter.plaidYYYYMMDD
         if let parsedDate = formatter.date(from: dateString) {
             date = parsedDate
         } else {
@@ -74,9 +86,7 @@ struct PlaidTransaction: Codable, Identifiable, Equatable {
         try container.encodeIfPresent(transactionType, forKey: .transactionType)
         
         // Encode date as string
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        try container.encode(formatter.string(from: date), forKey: .date)
+        try container.encode(DateFormatter.plaidYYYYMMDD.string(from: date), forKey: .date)
     }
     
     /// Transaction type enumeration

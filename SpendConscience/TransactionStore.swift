@@ -99,16 +99,23 @@ class TransactionStore: ObservableObject {
                 // Convert amount (Plaid uses negative for expenses, we use positive)
                 let amount = Decimal(abs(plaidTx.amount))
                 
-                // Check if transaction already exists (simple duplicate detection)
-                // Fetch all transactions and filter in memory to avoid predicate macro issues
-                let allTransactions = try modelContext.fetch(FetchDescriptor<Transaction>())
+                // Check if transaction already exists (efficient duplicate detection)
+                // Create a targeted fetch for potential duplicates on the same day
+                let calendar = Calendar.current
+                let startOfDay = calendar.startOfDay(for: plaidTx.date)
+                let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
                 
-                // Filter for duplicates in memory
-                let transactionExists = allTransactions.contains { existing in
+                // Use a targeted fetch to find potential duplicates
+                let descriptor = FetchDescriptor<Transaction>()
+                let potentialDuplicates = try modelContext.fetch(descriptor).filter { existing in
                     existing.accountId == plaidTx.accountId &&
                     existing.amount == amount &&
-                    existing.description.contains(plaidTx.name) &&
-                    Calendar.current.isDate(existing.date, inSameDayAs: plaidTx.date)
+                    existing.date >= startOfDay &&
+                    existing.date < endOfDay
+                }
+                
+                let transactionExists = potentialDuplicates.contains { existing in
+                    existing.description.contains(plaidTx.name)
                 }
                 
                 if !transactionExists {

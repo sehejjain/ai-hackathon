@@ -73,7 +73,7 @@ struct ContentView: View {
                     
                     // Plaid Testing Interface
                     if let transactionStore = transactionStore {
-                        PlaidTestingView()
+                        PlaidTestingView(showTransactionList: $showTransactionList)
                             .environmentObject(plaidService)
                             .environmentObject(transactionStore)
                     }
@@ -275,7 +275,7 @@ struct PermissionItemView: View {
 
 struct PlaidTestingView: View {
     @EnvironmentObject private var plaidService: PlaidService
-    @State private var showTransactionList = false
+    @Binding var showTransactionList: Bool
     
     var body: some View {
         VStack(spacing: 12) {

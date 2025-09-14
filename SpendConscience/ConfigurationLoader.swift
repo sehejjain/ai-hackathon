@@ -23,8 +23,8 @@ struct ConfigurationLoader {
         }
         
         // Alternative bundle resource names
-        if let bundlePlistPath2 = Bundle.main.path(forResource: "Config", ofType: "Development.plist") {
-            possiblePaths.append(bundlePlistPath2)
+        if let altBundlePlistPath = Bundle.main.path(forResource: "Config.Development", ofType: "plist") {
+            possiblePaths.append(altBundlePlistPath)
         }
         
         // In the project directory (during development)

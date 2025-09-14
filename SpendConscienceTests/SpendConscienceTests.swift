@@ -16,41 +16,38 @@ struct SpendConscienceTests {
     @Test func testPlaidServiceInitialization() async throws {
         let plaidService = PlaidService()
         
-        #expect(!plaidService.isConnected)
-        #expect(!plaidService.isLoading)
-        #expect(plaidService.accounts.isEmpty)
-        #expect(plaidService.transactions.isEmpty)
-        #expect(plaidService.lastError == nil)
-        #expect(plaidService.accessToken == nil)
-        #expect(plaidService.itemId == nil)
+        await MainActor.run {
+            #expect(!plaidService.isConnected)
+            #expect(!plaidService.isLoading)
+            #expect(plaidService.accounts.isEmpty)
+            #expect(plaidService.transactions.isEmpty)
+            #expect(plaidService.currentError == nil)
+            // Note: accessToken and itemId are private - cannot test directly
+        }
     }
     
     @Test func testPlaidConfigurationValidation() async throws {
-        let config = PlaidConfiguration()
-        
         // Test that configuration has required properties
-        #expect(!config.clientId.isEmpty)
-        #expect(!config.secret.isEmpty)
-        #expect(!config.environment.isEmpty)
-        #expect(config.environment == "sandbox")
-        #expect(!config.products.isEmpty)
-        #expect(config.products.contains("transactions"))
-        #expect(!config.countryCodes.isEmpty)
-        #expect(config.countryCodes.contains("US"))
+        #expect(PlaidConfiguration.clientId != nil)
+        #expect(PlaidConfiguration.secret != nil)
+        #expect(PlaidConfiguration.environment == .sandbox)
+        #expect(!PlaidConfiguration.baseURL.isEmpty)
+        
+        // Note: products and countryCodes don't exist in PlaidConfiguration
+        // These might be in PlaidService configuration
     }
     
     @Test func testPlaidErrorEnum() async throws {
         let invalidCredentialsError = PlaidError.invalidCredentials
-        let networkError = PlaidError.networkError(NSError(domain: "TestDomain", code: 500, userInfo: nil))
+        let networkError = PlaidError.networkError("Test network error")
         let invalidResponseError = PlaidError.invalidResponse
-        let missingDataError = PlaidError.missingData("test field")
+        let missingCredentialsError = PlaidError.missingCredentials  // or another appropriate case
         
         // Test error descriptions
         #expect(invalidCredentialsError.localizedDescription.contains("Invalid"))
         #expect(networkError.localizedDescription.contains("Network"))
         #expect(invalidResponseError.localizedDescription.contains("Invalid response"))
-        #expect(missingDataError.localizedDescription.contains("Missing"))
-        #expect(missingDataError.localizedDescription.contains("test field"))
+        #expect(missingCredentialsError.localizedDescription.contains("Missing"))
     }
     
     @Test func testPlaidModelsDecoding() async throws {
@@ -71,12 +68,12 @@ struct SpendConscienceTests {
         let accountData = accountJSON.data(using: .utf8)!
         let account = try JSONDecoder().decode(PlaidAccount.self, from: accountData)
         
-        #expect(account.accountId == "test_account_id")
+        #expect(account.id == "test_account_id")
         #expect(account.name == "Test Checking")
-        #expect(account.type == "depository")
-        #expect(account.subtype == "checking")
-        #expect(account.balances.current == 1000.50)
-        #expect(account.balances.available == 950.25)
+        #expect(account.type == .depository)
+        #expect(account.subtype == .checking)
+        #expect(account.balance.current == 1000.50)
+        #expect(account.balance.available == 950.25)
     }
     
     @Test func testPlaidTransactionDecoding() async throws {
@@ -96,10 +93,14 @@ struct SpendConscienceTests {
         let transactionData = transactionJSON.data(using: .utf8)!
         let transaction = try JSONDecoder().decode(PlaidTransaction.self, from: transactionData)
         
-        #expect(transaction.transactionId == "test_transaction_id")
+        #expect(transaction.id == "test_transaction_id")
         #expect(transaction.accountId == "test_account_id")
         #expect(transaction.amount == 25.50)
-        #expect(transaction.date == "2024-01-15")
+        // Date should be parsed properly from the JSON string
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let expectedDate = dateFormatter.date(from: "2024-01-15")!
+        #expect(transaction.date == expectedDate)
         #expect(transaction.name == "Test Transaction")
         #expect(transaction.merchantName == "Test Merchant")
         #expect(transaction.category?.count == 2)

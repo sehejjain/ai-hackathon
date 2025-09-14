@@ -14,8 +14,10 @@ class PlaidService: ObservableObject {
     
     // MARK: - Published Properties
     
-    /// Current connection status
+    /// Network reachability
     @Published var isConnected: Bool = false
+    /// Plaid link status (access token available)
+    @Published var isPlaidLinked: Bool = false
     
     /// Loading state for API operations
     @Published var isLoading: Bool = false
@@ -53,6 +55,12 @@ class PlaidService: ObservableObject {
     
     /// Item ID from token exchange
     private var itemId: String?
+
+    /// Persisted transactions cursor
+    private var transactionsCursor: String? {
+        get { UserDefaults.standard.string(forKey: "plaid.transactions.cursor") }
+        set { UserDefaults.standard.set(newValue, forKey: "plaid.transactions.cursor") }
+    }
     
     /// Date formatter for Plaid API dates (YYYY-MM-DD format)
     private let plaidDateFormatter: DateFormatter = {
@@ -268,6 +276,7 @@ class PlaidService: ObservableObject {
             // Store tokens for future use
             self.accessToken = response.accessToken
             self.itemId = response.itemId
+            self.isPlaidLinked = true
             
             print("✅ PlaidService: Token exchange completed successfully")
             return (accessToken: response.accessToken, itemId: response.itemId)
@@ -417,12 +426,12 @@ class PlaidService: ObservableObject {
             }
             
             var allTransactions: [PlaidTransaction] = []
-            var cursor: String? = nil
+            var cursor: String? = transactionsCursor  // persisted cursor
+            var hasMore = true
             var attempts = 0
             let maxAttempts = 6
             
-            // Poll for transactions with retries (similar to Python example)
-            repeat {
+            while hasMore && attempts < maxAttempts {
                 attempts += 1
                 print("🔄 PlaidService: Sync attempt \(attempts)/\(maxAttempts) (cursor: \(cursor ?? "nil"))")
                 
@@ -442,27 +451,18 @@ class PlaidService: ObservableObject {
                     responseType: TransactionsSyncResponse.self
                 )
                 
-                // Add new transactions
+                // Page accumulation
                 allTransactions.append(contentsOf: response.added)
-                
-                // Update cursor for next iteration
                 cursor = response.nextCursor
+                hasMore = response.hasMore
+                print("📄 PlaidService: Added \(response.added.count) (total: \(allTransactions.count)), has_more=\(hasMore)")
                 
-                print("📄 PlaidService: Added \(response.added.count) transactions (total: \(allTransactions.count))")
-                
-                // If we got transactions, break out of retry loop
-                if !allTransactions.isEmpty {
-                    break
-                }
-                
-                // Wait before next attempt (like Python example)
-                if attempts < maxAttempts {
-                    try await Task.sleep(for: .seconds(5))
-                }
-                
-            } while attempts < maxAttempts
+                // Poll delay only when we need to wait for more data
+                if hasMore { try await Task.sleep(for: .seconds(5)) }
+            }
             
             self.transactions = allTransactions
+            self.transactionsCursor = cursor  // persist latest cursor
             
             if allTransactions.isEmpty {
                 print("⚠️ PlaidService: No transactions found after \(attempts) attempts")
