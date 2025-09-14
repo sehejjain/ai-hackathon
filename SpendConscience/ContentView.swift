@@ -6,7 +6,6 @@ struct ContentView: View {
     @EnvironmentObject private var userManager: UserManager
     @Environment(\.modelContext) private var modelContext
     @State private var dataManager: DataManager?
-    @State private var navigationPath = NavigationPath()
     @State private var initError: Error?
     
     // App-level dark mode control
@@ -26,14 +25,11 @@ struct ContentView: View {
     }
     
     private var authenticatedView: some View {
-        NavigationStack(path: $navigationPath) {
+        Group {
             if let dataManager = dataManager {
                 MainTabView()
                     .environmentObject(userManager)
                     .environmentObject(dataManager)
-                    .environment(\.navigate) { destination in
-                        navigationPath.append(destination)
-                    }
             } else if let _ = initError {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -60,48 +56,6 @@ struct ContentView: View {
                 LoadingPlaceholderView(title: "SpendConscience", subtitle: "Your AI Financial Assistant")
             }
         }
-        .navigationDestination(for: Destination.self) { destination in
-            if let dataManager = dataManager {
-                switch destination {
-                case .aiAssistant:
-                    AIFinancialAssistantView()
-                
-                case .budgetDetail(let budget):
-                    BudgetDetailView(budgetID: budget.id)
-                        .environmentObject(dataManager)
-                        .environmentObject(userManager)
-                
-                case .transactionDetail(let transaction):
-                    TransactionDetailView(transactionID: transaction.id)
-                        .environmentObject(dataManager)
-                        .environmentObject(userManager)
-                
-                case .transactionEdit(let transaction):
-                    TransactionEditView(transaction: transaction, dataManager: dataManager) {
-                        // Handle dismiss
-                    }
-                    .environmentObject(userManager)
-                
-                case .transactionHistory:
-                    TransactionHistoryView()
-                        .environmentObject(dataManager)
-                        .environmentObject(userManager)
-                
-                case .expenses:
-                    ExpensesView()
-                        .environmentObject(dataManager)
-                        .environmentObject(userManager)
-                
-                case .profile:
-                    ProfileView()
-                        .environmentObject(userManager)
-                        .environmentObject(dataManager)
-                }
-            } else {
-                Text("Loading...")
-                    .navigationTitle("Loading")
-            }
-        }
         .onAppear {
             if userManager.isAuthenticated && dataManager == nil {
                 initializeDataManager()
@@ -111,11 +65,9 @@ struct ContentView: View {
             if isAuthenticated {
                 initError = nil
                 initializeDataManager()
-                navigationPath = NavigationPath()
             } else {
                 dataManager = nil
                 initError = nil
-                navigationPath = NavigationPath()
             }
         }
     }
