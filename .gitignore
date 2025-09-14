@@ -98,3 +98,5 @@ Config.Local.xcconfig
 .env
 .env.local
 .env.development
+
+**/node_modules/*
