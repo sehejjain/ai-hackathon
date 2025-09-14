@@ -26,10 +26,15 @@ struct SpendConscienceTests {
         }
     }
     
-    @Test func testPlaidConfigurationValidation() async throws {
-        // Test that configuration has required properties
-        #expect(PlaidConfiguration.clientId != nil)
-        #expect(PlaidConfiguration.secret != nil)
+    @Test func testPlaidConfigurationValidation_ServerSideOrDirect() async throws {
+        // Test that configuration handles both server-side and direct Plaid integration
+        let isServerSide = ConfigurationLoader.getString(ConfigurationLoader.spendConscienceAPIURLKey) != nil
+        if isServerSide {
+            #expect(PlaidConfiguration.validateCredentials() == true)
+        } else {
+            #expect(PlaidConfiguration.clientId != nil)
+            #expect(PlaidConfiguration.secret != nil)
+        }
         #expect(PlaidConfiguration.environment == .sandbox)
         #expect(!PlaidConfiguration.baseURL.isEmpty)
         
@@ -338,6 +343,108 @@ struct SpendConscienceTests {
         let request = plaidService.createSandboxPublicTokenRequest()
         #expect(request.url != nil)
         #expect(request.httpBody != nil)
+    }
+    
+    // MARK: - ConfigurationLoader Tests
+    
+    @Test func testConfigurationLoaderBasicFunctionality() async throws {
+        // Test that configuration can be loaded
+        let config = ConfigurationLoader.load()
+        #expect(config is [String: Any])
+        
+        // Test string retrieval
+        let apiURL = ConfigurationLoader.getString(ConfigurationLoader.spendConscienceAPIURLKey)
+        #expect(apiURL != nil)
+        #expect(!apiURL!.isEmpty)
+        
+        // Test boolean retrieval
+        let aiEnabled = ConfigurationLoader.getBool(ConfigurationLoader.enableAIAssistantKey)
+        #expect(aiEnabled == true) // Should be true based on our updated config
+        
+        // Test API URL retrieval
+        let retrievedAPIURL = ConfigurationLoader.getAPIURL()
+        #expect(!retrievedAPIURL.isEmpty)
+        #expect(retrievedAPIURL.contains("vercel.app") || retrievedAPIURL.contains("localhost"))
+    }
+    
+    @Test func testConfigurationLoaderValidation() async throws {
+        let validation = ConfigurationLoader.validateConfiguration()
+        
+        // Should be valid with our updated configuration
+        #expect(validation.isValid == true)
+        #expect(validation.errors.isEmpty)
+        
+        // Test specific values
+        let apiURL = ConfigurationLoader.getAPIURL()
+        #expect(apiURL == "https://spendconscience-agents-99b4avjav-sehej-jains-projects.vercel.app")
+        
+        let aiEnabled = ConfigurationLoader.isAIAssistantEnabled()
+        #expect(aiEnabled == true)
+    }
+    
+    @Test func testConfigurationLoaderCaching() async throws {
+        // Test that multiple calls return the same configuration (cached)
+        let config1 = ConfigurationLoader.load()
+        let config2 = ConfigurationLoader.load()
+        
+        // Should be the same dictionary (cached result)
+        #expect(config1.count == config2.count)
+        
+        // Test specific values are consistent
+        let apiURL1 = ConfigurationLoader.getAPIURL()
+        let apiURL2 = ConfigurationLoader.getAPIURL()
+        #expect(apiURL1 == apiURL2)
+        
+        // Test reload functionality
+        let reloadedConfig = ConfigurationLoader.reload()
+        #expect(reloadedConfig is [String: Any])
+    }
+    
+    @Test func testConfigurationLoaderSpecificValues() async throws {
+        // Test that the configuration returns the expected Vercel URL
+        let apiURL = ConfigurationLoader.getAPIURL()
+        #expect(apiURL == "https://spendconscience-agents-99b4avjav-sehej-jains-projects.vercel.app")
+        
+        // Test that AI Assistant is enabled
+        let aiEnabled = ConfigurationLoader.isAIAssistantEnabled()
+        #expect(aiEnabled == true)
+        
+        // Test environment setting
+        let environment = ConfigurationLoader.getString(ConfigurationLoader.environmentKey)
+        #expect(environment == "sandbox")
+        
+        // Test debug mode
+        let debugMode = ConfigurationLoader.getBool(ConfigurationLoader.debugModeKey)
+        #expect(debugMode == true)
+    }
+    
+    @Test func testConfigurationLoaderFallbackBehavior() async throws {
+        // Test getString with non-existent key
+        let nonExistentValue = ConfigurationLoader.getString("NonExistentKey")
+        #expect(nonExistentValue == nil)
+        
+        // Test getBool with non-existent key (should return false)
+        let nonExistentBool = ConfigurationLoader.getBool("NonExistentBoolKey")
+        #expect(nonExistentBool == false)
+    }
+    
+    // MARK: - PlaidConfiguration Integration Tests
+    
+    @Test func testPlaidConfigurationWithServerSideIntegration() async throws {
+        // Test that PlaidConfiguration handles server-side integration gracefully
+        let validation = PlaidConfiguration.validateCredentials()
+        #expect(validation == true) // Should be true when using server-side backend
+        
+        // Test that missing Plaid keys don't cause failures
+        let clientId = PlaidConfiguration.clientId
+        let secret = PlaidConfiguration.secret
+        
+        // These may be nil when using server-side integration, which is acceptable
+        // The important thing is that validateCredentials() returns true
+        if clientId == nil && secret == nil {
+            // This is expected when using server-side integration
+            #expect(ConfigurationLoader.getString(ConfigurationLoader.spendConscienceAPIURLKey) != nil)
+        }
     }
 }
 

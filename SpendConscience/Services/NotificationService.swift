@@ -753,3 +753,203 @@ extension NotificationService {
         )
     }
 }
+
+// MARK: - AI Insights and Enhanced Notifications
+
+extension NotificationService {
+    
+    /// Schedule AI-generated financial insights
+    func scheduleAIInsightNotification(insight: String, category: String? = nil) async {
+        guard hasPermission else { return }
+        
+        let identifier = "ai_insight_\(Date().timeIntervalSince1970)"
+        let title = "💡 AI Financial Insight"
+        let body = insight
+        
+        do {
+            try await scheduleNotification(
+                identifier: identifier,
+                title: title,
+                body: body,
+                timeInterval: 1,
+                categoryIdentifier: .spendingReminder // Reuse existing category
+            )
+        } catch {
+            print("Failed to schedule AI insight notification: \(error)")
+        }
+    }
+    
+    /// Schedule money-saving tip notifications
+    func scheduleMoneySavingTip(tip: String, potentialSavings: Double? = nil) async {
+        guard hasPermission else { return }
+        
+        var body = tip
+        if let savings = potentialSavings {
+            body += " Potential savings: $\(String(format: "%.2f", savings))"
+        }
+        
+        let identifier = "money_tip_\(Date().timeIntervalSince1970)"
+        let title = "💰 Money Saving Tip"
+        
+        do {
+            try await scheduleNotification(
+                identifier: identifier,
+                title: title,
+                body: body,
+                timeInterval: 1,
+                categoryIdentifier: .spendingReminder
+            )
+        } catch {
+            print("Failed to schedule money saving tip: \(error)")
+        }
+    }
+    
+    /// Schedule unusual spending pattern alerts
+    func scheduleUnusualSpendingAlert(category: String, amount: Double, averageAmount: Double) async {
+        guard hasPermission else { return }
+        
+        let increase = ((amount - averageAmount) / averageAmount) * 100
+        
+        let identifier = "unusual_spending_\(sanitizeIdentifier(category))"
+        let title = "Unusual Spending Detected 📊"
+        let body = "Your \(category) spending today ($\(String(format: "%.2f", amount))) is \(String(format: "%.0f", increase))% higher than usual."
+        
+        // Prevent duplicate notifications within 24 hours
+        if let lastSent = notificationHistory[identifier],
+           Date().timeIntervalSince(lastSent) < 86400 {
+            return
+        }
+        
+        do {
+            try await scheduleNotification(
+                identifier: identifier,
+                title: title,
+                body: body,
+                timeInterval: 1,
+                categoryIdentifier: .budgetAlert
+            )
+            notificationHistory[identifier] = Date()
+            saveNotificationHistory()
+        } catch {
+            print("Failed to schedule unusual spending alert: \(error)")
+        }
+    }
+    
+    /// Schedule goal progress notifications
+    func scheduleGoalProgressNotification(goalName: String, progress: Double, target: Double) async {
+        guard hasPermission else { return }
+        
+        let percentage = (progress / target) * 100
+        
+        let identifier = "goal_progress_\(sanitizeIdentifier(goalName))"
+        let title = "Goal Progress Update 🎯"
+        let body = "You're \(String(format: "%.1f", percentage))% towards your \(goalName) goal! Keep it up!"
+        
+        do {
+            try await scheduleNotification(
+                identifier: identifier,
+                title: title,
+                body: body,
+                timeInterval: 1,
+                categoryIdentifier: .spendingReminder
+            )
+        } catch {
+            print("Failed to schedule goal progress notification: \(error)")
+        }
+    }
+    
+    /// Extract and schedule AI-generated insights from backend response
+    func scheduleAIGeneratedInsights(from response: SpendConscienceData) async {
+        let insights = extractInsights(from: response.response)
+        
+        for (index, insight) in insights.enumerated() {
+            // Stagger notifications to avoid overwhelming the user
+            try? await Task.sleep(nanoseconds: UInt64(index * 5) * 1_000_000_000) // 5 second intervals
+            await scheduleAIInsightNotification(insight: insight)
+        }
+    }
+    
+    /// Extract actionable insights from AI response text
+    private func extractInsights(from response: String) -> [String] {
+        let sentences = response.components(separatedBy: ". ")
+        return sentences.filter { sentence in
+            let lowercased = sentence.lowercased()
+            return lowercased.contains("recommend") ||
+                   lowercased.contains("suggest") ||
+                   lowercased.contains("consider") ||
+                   lowercased.contains("tip") ||
+                   lowercased.contains("try") ||
+                   lowercased.contains("save")
+        }.prefix(3).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    }
+    
+    /// Schedule recurring budget check reminders
+    func scheduleRecurringBudgetCheckReminder() async {
+        guard hasPermission else { return }
+        
+        // Schedule for every Sunday at 6 PM
+        var dateComponents = DateComponents()
+        dateComponents.weekday = 1 // Sunday
+        dateComponents.hour = 18
+        dateComponents.minute = 0
+        
+        do {
+            try await scheduleRepeatingNotification(
+                identifier: "weekly_budget_check",
+                title: "Budget Check-in Reminder 📋",
+                body: "Take a moment to review your spending and budgets for this week.",
+                dateComponents: dateComponents,
+                categoryIdentifier: .weeklyReport
+            )
+        } catch {
+            print("Failed to schedule recurring budget check reminder: \(error)")
+        }
+    }
+    
+    /// Schedule monthly goal review notifications
+    func scheduleMonthlyGoalReview() async {
+        guard hasPermission else { return }
+        
+        // Schedule for the first day of every month at 9 AM
+        var dateComponents = DateComponents()
+        dateComponents.day = 1
+        dateComponents.hour = 9
+        dateComponents.minute = 0
+        
+        do {
+            try await scheduleRepeatingNotification(
+                identifier: "monthly_goal_review",
+                title: "Monthly Goal Review 🎯",
+                body: "It's time to review your financial goals and set new targets for the month ahead.",
+                dateComponents: dateComponents,
+                categoryIdentifier: .spendingReminder
+            )
+        } catch {
+            print("Failed to schedule monthly goal review: \(error)")
+        }
+    }
+    
+    /// Schedule enhanced budget exceeded notification with more context
+    func scheduleEnhancedBudgetExceededAlert(category: String, budgetAmount: Double, currentSpending: Double) async {
+        guard hasPermission else { return }
+        
+        let overspend = currentSpending - budgetAmount
+        let percentage = (currentSpending / budgetAmount) * 100
+        
+        let identifier = "budget_exceeded_enhanced_\(sanitizeIdentifier(category))"
+        let title = "Budget Exceeded! 💸"
+        let body = "You've spent $\(String(format: "%.2f", currentSpending)) in \(category), which is $\(String(format: "%.2f", overspend)) over your $\(String(format: "%.2f", budgetAmount)) budget (\(String(format: "%.0f", percentage))%)."
+        
+        do {
+            try await scheduleNotification(
+                identifier: identifier,
+                title: title,
+                body: body,
+                timeInterval: 1,
+                categoryIdentifier: .budgetAlert
+            )
+        } catch {
+            print("Failed to schedule enhanced budget exceeded alert: \(error)")
+        }
+    }
+}

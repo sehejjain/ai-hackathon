@@ -162,10 +162,27 @@ struct SpendingChartView: View {
     // MARK: - Category Breakdown Chart
     private func categoryBreakdownChart(height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Category Breakdown")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Text("Category Breakdown")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .accessibilityAddTraits(.isHeader)
+                
+                Spacer()
+                
+                // Data source indicator
+                if hasAIProcessedData {
+                    HStack(spacing: 4) {
+                        Image(systemName: "cloud.fill")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        Text("AI")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                    .accessibilityLabel("Includes AI processed data")
+                }
+            }
             
             if categoryData.isEmpty {
                 emptyStateView(message: "No category spending data available")
@@ -190,6 +207,9 @@ struct SpendingChartView: View {
                     
                     // Category List
                     categoryListView
+                    
+                    // AI Insights Section
+                    aiInsightsSection
                 }
             }
         }
@@ -376,6 +396,46 @@ struct SpendingChartView: View {
             "\(data.category.displayName): \(formatCurrency(data.amount)) (\(String(format: "%.1f", data.percentage))%)"
         }
         return "Category breakdown: " + descriptions.joined(separator: ", ")
+    }
+    
+    // MARK: - AI Integration Properties
+    
+    private var hasAIProcessedData: Bool {
+        // Check if any transactions or budgets have backend data
+        return dataManager.transactions.contains { $0.backendSyncDate != nil } ||
+               dataManager.budgets.contains { $0.isFromBackend }
+    }
+    
+    // MARK: - AI Insights Section
+    
+    private var aiInsightsSection: some View {
+        Group {
+            if let aiResponse = dataManager.apiService.currentResponse,
+               !aiResponse.response.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("AI Spending Insights")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Text(aiResponse.response)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(4)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.blue.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .accessibilityLabel("AI spending insights")
+                .accessibilityValue(aiResponse.response)
+            }
+        }
     }
 }
 

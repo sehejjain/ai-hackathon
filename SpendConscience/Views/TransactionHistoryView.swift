@@ -26,6 +26,24 @@ struct TransactionHistoryView: View {
                 .navigationTitle("Transaction History")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button {
+                            Task {
+                                await viewModel.syncWithBackend()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: viewModel.isBackendSyncing ? "arrow.triangle.2.circlepath" : "icloud.and.arrow.down")
+                                    .symbolEffect(.rotate, isActive: viewModel.isBackendSyncing)
+                                if viewModel.isBackendSyncing {
+                                    Text("Syncing...")
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                        .disabled(viewModel.isBackendSyncing)
+                    }
+                    
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
                             Button {
@@ -49,6 +67,17 @@ struct TransactionHistoryView: View {
                                     }
                                 }
                             }
+                            
+                            Divider()
+                            
+                            Button {
+                                Task {
+                                    await viewModel.syncWithBackend()
+                                }
+                            } label: {
+                                Label("Sync with AI Service", systemImage: "icloud.and.arrow.down")
+                            }
+                            .disabled(viewModel.isBackendSyncing)
                         } label: {
                             Image(systemName: "ellipsis.circle")
                         }
@@ -76,6 +105,24 @@ struct TransactionHistoryView: View {
                     }
                 } message: { transaction in
                     Text("Are you sure you want to delete this transaction? This action cannot be undone.")
+                }
+                .alert("Sync Error", isPresented: Binding(
+                    get: { 
+                        if case .backendConnectionFailed = dataManager.error {
+                            return true
+                        }
+                        if case .apiServiceError = dataManager.error {
+                            return true
+                        }
+                        return false
+                    },
+                    set: { _ in dataManager.error = nil }
+                )) {
+                    Button("OK") {
+                        dataManager.error = nil
+                    }
+                } message: {
+                    Text(dataManager.error?.localizedDescription ?? "An error occurred while syncing data.")
                 }
             } else {
                 ProgressView("Loading...")
@@ -166,29 +213,41 @@ struct TransactionHistoryView: View {
             }
         }
         .listStyle(InsetGroupedListStyle())
-        .refreshable {
-            await viewModel.dataManager.loadAllData()
-        }
+                .refreshable {
+                    await viewModel.syncWithBackend()
+                }
     }
 
     private func transactionRow(transaction: Transaction) -> some View {
-        SwiftDataTransactionRowView(transaction: transaction)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                navigate(.transactionDetail(transaction))
+        HStack {
+            SwiftDataTransactionRowView(transaction: transaction)
+            
+            Spacer()
+            
+            // Visual indicator for backend-sourced transactions
+            if transaction.isFromBackend {
+                Image(systemName: "icloud.fill")
+                    .font(.caption2)
+                    .foregroundColor(.blue)
+                    .opacity(0.6)
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button("Delete") {
-                    transactionToDelete = transaction
-                    showingDeleteConfirmation = true
-                }
-                .tint(.red)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            navigate(.transactionDetail(transaction))
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button("Delete") {
+                transactionToDelete = transaction
+                showingDeleteConfirmation = true
+            }
+            .tint(.red)
 
-                Button("Edit") {
-                    selectedTransaction = transaction
-                }
-                .tint(.blue)
+            Button("Edit") {
+                selectedTransaction = transaction
             }
+            .tint(.blue)
+        }
     }
 }
 

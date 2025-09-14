@@ -10,10 +10,12 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var userManager: UserManager
     @EnvironmentObject private var permissionManager: PermissionManager
+    @EnvironmentObject private var plaidService: PlaidService
     @State private var showingSignOutAlert = false
     @State private var showPermissionSheet = false
     @State private var showExportAlert = false
     @State private var showPrivacySheet = false
+    @State private var showPlaidOnboarding = false
     
     // App Storage for settings
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
@@ -64,6 +66,12 @@ struct ProfileView: View {
                 // Permission Status Card - Comprehensive permission management
                 VStack(spacing: 16) {
                     PermissionStatusCard(showPermissionSheet: $showPermissionSheet)
+                        .padding(.horizontal)
+                }
+                
+                // Bank Connection Section
+                VStack(spacing: 16) {
+                    BankConnectionCard(showPlaidOnboarding: $showPlaidOnboarding)
                         .padding(.horizontal)
                 }
                 
@@ -150,6 +158,21 @@ struct ProfileView: View {
                                     .font(.caption)
                                     .buttonStyle(.bordered)
                                     .controlSize(.small)
+                                }
+                                
+                                Divider()
+                                
+                                // Data Management
+                                NavigationLink(destination: DataManagementView()) {
+                                    HStack {
+                                        Image(systemName: "internaldrive")
+                                            .foregroundColor(.blue)
+                                        Text("Data Management")
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
                                 
                                 Divider()
@@ -291,6 +314,9 @@ struct ProfileView: View {
         .sheet(isPresented: $showPrivacySheet) {
             PrivacySettingsView()
         }
+        .sheet(isPresented: $showPlaidOnboarding) {
+            PlaidOnboardingView()
+        }
         .alert("Sign Out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Sign Out", role: .destructive) {
@@ -308,6 +334,99 @@ struct ProfileView: View {
         } message: {
             Text("Export your transaction data and budgets. This feature will be available in a future update.")
         }
+    }
+}
+
+// MARK: - Bank Connection Card
+
+struct BankConnectionCard: View {
+    @EnvironmentObject private var plaidService: PlaidService
+    @Binding var showPlaidOnboarding: Bool
+    
+    var body: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Bank Connection", systemImage: "building.columns")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    if plaidService.isPlaidLinked {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    } else {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundColor(.orange)
+                    }
+                }
+                
+                if plaidService.isPlaidLinked {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Status:")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Text("Connected")
+                                .foregroundColor(.green)
+                                .fontWeight(.medium)
+                        }
+                        
+                        HStack {
+                            Text("Accounts:")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Text("\(plaidService.linkedAccounts.count)")
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        if let lastSync = plaidService.lastSyncDate {
+                            HStack {
+                                Text("Last Sync:")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Text(lastSync, style: .relative)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        HStack {
+                            Button("Manage Accounts") {
+                                // TODO: Navigate to account management
+                            }
+                            .font(.caption)
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            
+                            Spacer()
+                            
+                            Button("Disconnect") {
+                                // TODO: Show disconnect confirmation
+                            }
+                            .font(.caption)
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Connect your bank account to get real-time transaction data and AI-powered financial insights.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Button("Connect Bank Account") {
+                            showPlaidOnboarding = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
+                }
+            }
+            .padding(.vertical, 8)
+        }
+        .accessibilityLabel("Bank connection status")
     }
 }
 

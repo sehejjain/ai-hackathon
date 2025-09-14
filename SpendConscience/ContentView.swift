@@ -30,6 +30,8 @@ struct ContentView: View {
                 MainTabView()
                     .environmentObject(userManager)
                     .environmentObject(dataManager)
+                    .errorRecovery(dataManager.errorRecoveryManager)
+                    .errorBanner(dataManager.errorRecoveryManager)
             } else if let _ = initError {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -76,13 +78,8 @@ struct ContentView: View {
     
     private func initializeDataManager() {
         if dataManager == nil {
-            do {
-                dataManager = DataManager(modelContext: modelContext)
-                logger.info("DataManager initialized successfully")
-            } catch {
-                initError = error
-                logger.error("Failed to initialize DataManager: \(error.localizedDescription)")
-            }
+            dataManager = DataManager(modelContext: modelContext)
+            logger.info("DataManager initialized successfully")
         }
     }
 }

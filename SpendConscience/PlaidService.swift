@@ -34,7 +34,19 @@ class PlaidService: ObservableObject {
     /// Service initialization status
     @Published var isInitialized: Bool = false
     
+    /// Backend integration status
+    @Published var useBackendAPI: Bool = true
+    
+    /// Linked accounts for UI display
+    @Published var linkedAccounts: [PlaidAccount] = []
+    
+    /// Last sync date for UI display
+    @Published var lastSyncDate: Date?
+    
     // MARK: - Private Properties
+    
+    /// SpendConscience API service for backend integration
+    private let apiService: SpendConscienceAPIService
     
     /// URLSession for API calls with standard SSL validation
     private lazy var urlSession: URLSession = {
@@ -99,6 +111,7 @@ class PlaidService: ObservableObject {
     // MARK: - Initialization
     
     init() {
+        self.apiService = SpendConscienceAPIService()
         initializeService()
         startNetworkMonitoring()
     }
