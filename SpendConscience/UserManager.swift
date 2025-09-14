@@ -85,8 +85,9 @@ final class UserManager: ObservableObject {
                 throw AuthError.userAlreadyExists
             }
             
-            // Create new user
-            let newUser = try User(email: email, firstName: firstName, lastName: lastName)
+            // Create new user (normalize email to lowercase for consistency/uniqueness)
+            let normalizedEmail = email.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            let newUser = try User(email: normalizedEmail, firstName: firstName, lastName: lastName)
             
             // Save to SwiftData
             guard let context = modelContext else {
@@ -101,7 +102,6 @@ final class UserManager: ObservableObject {
             isAuthenticated = true
             isLoggedIn = true
             currentUserId = newUser.id.uuidString
-            
         } catch {
             if let authError = error as? AuthError {
                 self.authError = authError
