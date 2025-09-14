@@ -56,9 +56,6 @@ struct TransactionDetailView: View {
         .onAppear {
             loadTransaction()
         }
-        .onReceive(dataManager.$transactions) { _ in
-            loadTransaction()
-        }
         .sheet(isPresented: $showingEditSheet) {
             if let transaction = transaction {
                 TransactionEditView(

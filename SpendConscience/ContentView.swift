@@ -125,7 +125,7 @@ struct ContentView: View {
     private func initializeDataManager() {
         if dataManager == nil {
             do {
-                dataManager = try DataManager(modelContext: modelContext)
+                dataManager = DataManager(modelContext: modelContext)
                 logger.info("DataManager initialized successfully")
             } catch {
                 initError = error
