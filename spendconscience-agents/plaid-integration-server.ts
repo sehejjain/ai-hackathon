@@ -37,20 +37,24 @@ app.get('/health', (req, res) => {
 // Main integration endpoint
 app.post('/ask', async (req, res) => {
   try {
-    const { 
-      query, 
-      userId = 'test-user', 
-      user_id, 
-      accessToken, 
-      access_token, 
-      lat, 
-      lng, 
-      coordinates 
+    const {
+      query,
+      userId = 'test-user',
+      user_id,
+      accessToken,
+      access_token,
+      lat,
+      lng,
+      coordinates,
+      calendarEvents = [],
+      calendar_events = []
     } = req.body;
 
     // Support both camelCase and snake_case for iOS compatibility
     const finalUserId = userId || user_id || 'test-user';
     const finalAccessToken = accessToken || access_token;
+    // Use calendar_events (snake_case from iOS) if calendarEvents (camelCase) is empty
+    const finalCalendarEvents = calendarEvents.length > 0 ? calendarEvents : calendar_events;
 
     if (!query) {
       return res.status(400).json({
@@ -59,7 +63,26 @@ app.post('/ask', async (req, res) => {
       });
     }
 
-    console.log(`📥 Received query: "${query}" for user: ${finalUserId}`);
+    console.log(`📥 [Server] Received query: "${query}" for user: ${finalUserId}`);
+    console.log(`📅 [Server] Received ${finalCalendarEvents.length} calendar events for AI analysis`);
+
+    // Log the entire request body for debugging
+    console.log(`📦 [Server] Full request body keys:`, Object.keys(req.body));
+
+    // Log calendar events details if any
+    if (finalCalendarEvents && finalCalendarEvents.length > 0) {
+      console.log(`📝 [Server] Calendar events details:`);
+      finalCalendarEvents.forEach((event, index) => {
+        console.log(`  Event ${index + 1}: ${JSON.stringify(event, null, 2)}`);
+      });
+    } else {
+      console.log(`❌ [Server] No calendar events received after processing both camelCase and snake_case`);
+      console.log(`   calendarEvents: ${calendarEvents.length}, calendar_events: ${calendar_events.length}`);
+
+      // Log first 500 chars of request body for debugging
+      const bodyStr = JSON.stringify(req.body).substring(0, 500);
+      console.log(`📦 [Server] Request body preview: ${bodyStr}...`);
+    }
 
     // Parse location coordinates if provided
     let userLocation = "37.7749,-122.4194"; // Default to SF
@@ -73,9 +96,9 @@ app.post('/ask', async (req, res) => {
     // 1. Start the Plaid MCP server as a background process
     // 2. Configure Inkeep to connect to the MCP server
     // 3. Let Inkeep agents use real Plaid data through MCP tools
-    
-    // For now, let's simulate the integration workflow
-    const integrationResponse = await simulateIntegration(query, finalAccessToken, userLocation);
+
+    // For now, let's simulate the integration workflow with real calendar data
+    const integrationResponse = await simulateIntegration(query, finalAccessToken, userLocation, finalCalendarEvents);
 
     // Ensure we have valid response data
     if (!integrationResponse || !integrationResponse.response) {
@@ -210,11 +233,17 @@ app.get('/demo', (req, res) => {
 });
 
 // Simulate the integration workflow
-async function simulateIntegration(query: string, accessToken?: string, userLocation: string = "37.7749,-122.4194") {
+async function simulateIntegration(query: string, accessToken?: string, userLocation: string = "37.7749,-122.4194", calendarEvents: any[] = []) {
   console.log('🔄 Simulating Plaid-Inkeep integration...');
+  console.log(`🗓️ Analyzing ${calendarEvents.length} calendar events`);
 
   // Get real Plaid data
-  const mockPlaidData = await getPlaidData(accessToken);  // Simulate agent flow based on query type
+  const mockPlaidData = await getPlaidData(accessToken);
+
+  // Analyze calendar events for future commitments
+  const calendarAnalysis = analyzeCalendarEvents(calendarEvents);
+
+  // Simulate agent flow based on query type
   const agentFlow = [];
   let response = '';
 
@@ -226,7 +255,17 @@ async function simulateIntegration(query: string, accessToken?: string, userLoca
   if (query.toLowerCase().includes('afford')) {
     // Affordability workflow
     agentFlow.push({ agent: 'Budget Analyzer', action: `Analyzed real Plaid spending data - Food budget at ${mockPlaidData.food_budget.percentage_used}% of $${mockPlaidData.food_budget.monthly_limit} limit` });
-    agentFlow.push({ agent: 'Future Commitments', action: 'Detected $100 fancy dinner planned for next week' });
+
+    // Use real calendar data instead of hardcoded scenario
+    if (calendarAnalysis.totalEvents > 0) {
+      agentFlow.push({ agent: 'Future Commitments', action: `Analyzed ${calendarAnalysis.totalEvents} upcoming events - Total estimated cost: $${calendarAnalysis.totalCost.toFixed(2)}` });
+      if (calendarAnalysis.expensiveEvents.length > 0) {
+        const expensiveEvent = calendarAnalysis.expensiveEvents[0];
+        agentFlow.push({ agent: 'Future Commitments', action: `Detected expensive event: ${expensiveEvent.title} ($${expensiveEvent.estimated_cost.toFixed(2)}) on ${new Date(expensiveEvent.start_date * 1000).toLocaleDateString()}` });
+      }
+    } else {
+      agentFlow.push({ agent: 'Future Commitments', action: 'No significant upcoming events detected for rest of month' });
+    }
     
     if (triggerAlternatives) {
       agentFlow.push({ agent: 'Alternative Finder', action: 'Triggered due to budget strain + future commitments' });
@@ -586,6 +625,61 @@ async function getPlaidData(accessToken?: string) {
       remaining: 109.50,
       percentage_used: 89.1
     }
+  };
+}
+
+// Analyze calendar events for future commitments
+function analyzeCalendarEvents(calendarEvents: any[]) {
+  if (!calendarEvents || calendarEvents.length === 0) {
+    return {
+      totalEvents: 0,
+      totalCost: 0,
+      expensiveEvents: [],
+      diningEvents: [],
+      summary: "No upcoming events found"
+    };
+  }
+
+  let totalCost = 0;
+  const expensiveEvents = [];
+  const diningEvents = [];
+
+  for (const event of calendarEvents) {
+    // Use snake_case field names as sent by iOS
+    const cost = event.estimated_cost || 0;
+    totalCost += cost;
+
+    // Track expensive events (>$50)
+    if (cost > 50) {
+      expensiveEvents.push(event);
+    }
+
+    // Track dining events specifically for budget analysis
+    if (event.event_type === 'dining') {
+      diningEvents.push(event);
+    }
+  }
+
+  // Sort expensive events by cost (highest first)
+  expensiveEvents.sort((a, b) => (b.estimated_cost || 0) - (a.estimated_cost || 0));
+
+  const summary = `${calendarEvents.length} events found, $${totalCost.toFixed(2)} estimated total cost`;
+
+  console.log(`📊 Calendar Analysis: ${summary}`);
+  if (expensiveEvents.length > 0) {
+    console.log(`💸 Expensive events: ${expensiveEvents.map(e => `${e.title} ($${e.estimated_cost})`).join(', ')}`);
+  }
+  if (diningEvents.length > 0) {
+    const diningCost = diningEvents.reduce((sum, e) => sum + (e.estimated_cost || 0), 0);
+    console.log(`🍽️  Dining events: ${diningEvents.length} events, $${diningCost.toFixed(2)} total`);
+  }
+
+  return {
+    totalEvents: calendarEvents.length,
+    totalCost,
+    expensiveEvents,
+    diningEvents,
+    summary
   };
 }
 

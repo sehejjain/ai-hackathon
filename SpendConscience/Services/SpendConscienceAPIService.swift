@@ -9,6 +9,7 @@ import Foundation
 import Combine
 import OSLog
 import CoreLocation
+import EventKit
 
 /// Response model for the SpendConscience API
 struct SpendConscienceResponse: Codable {
@@ -61,13 +62,15 @@ struct FinancialQuestionRequest: Codable {
     let accessToken: String?
     let lat: Double?
     let lng: Double?
-    
-    init(query: String, userId: String = "ios-user", accessToken: String? = nil, lat: Double? = nil, lng: Double? = nil) {
+    let calendarEvents: [CalendarEventData]?
+
+    init(query: String, userId: String = "ios-user", accessToken: String? = nil, lat: Double? = nil, lng: Double? = nil, calendarEvents: [CalendarEventData]? = nil) {
         self.query = query
         self.userId = userId
         self.accessToken = accessToken
         self.lat = lat
         self.lng = lng
+        self.calendarEvents = calendarEvents
     }
 }
 
@@ -109,19 +112,20 @@ enum SpendConscienceAPIError: Error, LocalizedError {
 
 /// Main service class for interacting with the SpendConscience API
 class SpendConscienceAPIService: ObservableObject {
-    
+
     // MARK: - Published Properties
-    
+
     @Published var isLoading: Bool = false
     @Published var currentResponse: SpendConscienceData?
     @Published var currentError: SpendConscienceAPIError?
     @Published var isConnected: Bool = false
     @Published var lastQuery: String = ""
-    
+
     // MARK: - Private Properties
-    
+
     private let baseURL: String
     private let session: URLSession
+    private var calendarService: CalendarService?
     private let encoder: JSONEncoder = {
         let e = JSONEncoder()
         e.keyEncodingStrategy = .convertToSnakeCase
@@ -143,8 +147,8 @@ class SpendConscienceAPIService: ObservableObject {
     private let locationManager: LocationManager?
     
     // MARK: - Initialization
-    
-    init(baseURL: String? = nil, locationManager: LocationManager? = nil) {
+
+    init(baseURL: String? = nil, locationManager: LocationManager? = nil, calendarService: CalendarService? = nil) {
         // Initialize network error handler
         self.networkErrorHandler = NetworkErrorHandler()
         
@@ -200,6 +204,18 @@ class SpendConscienceAPIService: ObservableObject {
         config.timeoutIntervalForRequest = networkErrorHandler.connectionQuality.recommendedTimeout
         config.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: config)
+
+        // Initialize calendar service - will be created on first use to handle main actor isolation
+        logger.debug("🔍 [APIService] Initializing calendar service (provided: \(calendarService != nil ? "YES" : "NO"))")
+        print("🔍 [APIService] Initializing calendar service (provided: \(calendarService != nil ? "YES" : "NO"))")
+        self.calendarService = calendarService
+        if calendarService != nil {
+            logger.debug("✅ [APIService] Using provided calendar service")
+            print("✅ [APIService] Using provided calendar service")
+        } else {
+            logger.debug("⚠️ [APIService] No calendar service provided, will create on first use")
+            print("⚠️ [APIService] No calendar service provided, will create on first use")
+        }
         
         // Now we can safely use self for logging since all properties are initialized
         if let providedURL = baseURL {
@@ -225,10 +241,31 @@ class SpendConscienceAPIService: ObservableObject {
             }
         }
         
-        logger.info("SpendConscienceAPIService initialized successfully with network monitoring and location services")
+        logger.info("SpendConscienceAPIService initialized successfully with network monitoring, location services, and calendar integration")
     }
     
     // MARK: - Public Methods
+    
+    /// Gets or creates the calendar service on main actor
+    @MainActor
+    private func getCalendarService() -> CalendarService {
+        logger.debug("🔍 [APIService] getCalendarService() called")
+        print("🔍 [APIService] getCalendarService() called")
+        
+        if let existingService = calendarService {
+            logger.debug("✅ [APIService] Using existing calendar service")
+            print("✅ [APIService] Using existing calendar service")
+            return existingService
+        }
+        
+        logger.debug("🔨 [APIService] Creating new CalendarService with EKEventStore")
+        print("🔨 [APIService] Creating new CalendarService with EKEventStore")
+        let newService = CalendarService(eventStore: EKEventStore())
+        self.calendarService = newService
+        logger.debug("✅ [APIService] New CalendarService created and stored")
+        print("✅ [APIService] New CalendarService created and stored")
+        return newService
+    }
     
     /// Tests connection to the server
     func testConnection() async {
@@ -238,7 +275,7 @@ class SpendConscienceAPIService: ObservableObject {
     /// Asks a financial question to the AI agents
     func askFinancialQuestion(_ query: String, userId: String = "ios-user") async -> SpendConscienceData? {
         logger.debug("Asking financial question")
-        
+
         await MainActor.run {
             isLoading = true
             currentError = nil
@@ -250,9 +287,48 @@ class SpendConscienceAPIService: ObservableObject {
                 isLoading = false
             }
         }
+
+        // Fetch calendar events for the remaining month
+        logger.debug("📅 [APIService] About to fetch calendar events for AI context")
+        print("📅 [APIService] About to fetch calendar events for AI context")
         
-        return await performRequestWithRetry(endpoint: "ask") {
-            return try await self.buildAndExecuteRequest(query: query, userId: userId, coordinates: nil)
+        do {
+            logger.debug("🔍 [APIService] Getting calendar service...")
+            print("🔍 [APIService] Getting calendar service...")
+            let calendarService = await getCalendarService()
+            logger.debug("✅ [APIService] Calendar service obtained successfully")
+            print("✅ [APIService] Calendar service obtained successfully")
+            
+            logger.debug("🔍 [APIService] Calling fetchRemainingMonthEvents()...")
+            print("🔍 [APIService] Calling fetchRemainingMonthEvents()...")
+            let calendarEvents = await calendarService.fetchRemainingMonthEvents()
+            logger.info("📊 [APIService] Received \(calendarEvents.count) calendar events from CalendarService")
+            print("📊 [APIService] Received \(calendarEvents.count) calendar events from CalendarService")
+            
+            // Log events being included in request
+            if calendarEvents.isEmpty {
+                logger.warning("⚠️ [APIService] No calendar events returned from CalendarService")
+                print("⚠️ [APIService] No calendar events returned from CalendarService")
+            } else {
+                for (index, event) in calendarEvents.enumerated() {
+                    logger.debug("📝 [APIService] Event \(index + 1) for API: '\(event.title)' - \(event.eventType.rawValue) - $\(String(format: "%.2f", event.estimatedCost ?? 0))")
+                    print("📝 [APIService] Event \(index + 1) for API: '\(event.title)' - \(event.eventType.rawValue) - $\(String(format: "%.2f", event.estimatedCost ?? 0))")
+                }
+            }
+            
+            return await performRequestWithRetry(endpoint: "ask") {
+                return try await self.buildAndExecuteRequest(query: query, userId: userId, coordinates: nil, calendarEvents: calendarEvents)
+            }
+        } catch {
+            logger.error("❌ [APIService] Error in calendar integration: \(error.localizedDescription)")
+            print("❌ [APIService] Error in calendar integration: \(error.localizedDescription)")
+            
+            // Continue without calendar events if there's an error
+            logger.warning("⚠️ [APIService] Proceeding without calendar events due to error")
+            print("⚠️ [APIService] Proceeding without calendar events due to error")
+            return await performRequestWithRetry(endpoint: "ask") {
+                return try await self.buildAndExecuteRequest(query: query, userId: userId, coordinates: nil, calendarEvents: [])
+            }
         }
     }
     
@@ -339,7 +415,7 @@ class SpendConscienceAPIService: ObservableObject {
             try validateCoordinates(coordinates)
         }
         
-        return try await buildAndExecuteRequest(query: query, userId: userId, coordinates: coordinates)
+        return try await buildAndExecuteRequest(query: query, userId: userId, coordinates: coordinates, calendarEvents: nil)
     }
     
     /// Validates coordinate ranges
@@ -575,7 +651,6 @@ class SpendConscienceAPIService: ObservableObject {
             print("🟡 DEBUG: Extracted JSON for budget parsing: \(jsonString)")
             #endif
         }
-        
         do {
             let backendResponse = try backendDataDecoder.decode(BackendDataResponse.self, from: jsonData)
             let budgets = backendResponse.budgets ?? []
@@ -838,7 +913,10 @@ class SpendConscienceAPIService: ObservableObject {
     }
     
     /// Shared method to build and execute API requests
-    private func buildAndExecuteRequest(query: String, userId: String, coordinates: CLLocationCoordinate2D?) async throws -> SpendConscienceData {
+    private func buildAndExecuteRequest(query: String, userId: String, coordinates: CLLocationCoordinate2D?, calendarEvents: [CalendarEventData]? = nil) async throws -> SpendConscienceData {
+        logger.debug("🔍 [APIService] buildAndExecuteRequest called with \(calendarEvents?.count ?? 0) calendar events")
+        print("🔍 [APIService] buildAndExecuteRequest called with \(calendarEvents?.count ?? 0) calendar events")
+        
         guard let url = makeURL("ask") else {
             throw SpendConscienceAPIError.invalidURL
         }
@@ -848,14 +926,29 @@ class SpendConscienceAPIService: ObservableObject {
             userId: userId,
             accessToken: nil,
             lat: coordinates?.latitude,
-            lng: coordinates?.longitude
+            lng: coordinates?.longitude,
+            calendarEvents: calendarEvents
         )
+        
+        logger.debug("📤 [APIService] Creating request with calendarEvents: \(calendarEvents != nil ? "YES" : "NO")")
+        print("📤 [APIService] Creating request with calendarEvents: \(calendarEvents != nil ? "YES" : "NO")")
         
         let requestData = try encoder.encode(request)
         
         // Debug: Log the request being sent
         if let requestString = String(data: requestData, encoding: .utf8) {
-            logger.debug("Sending request: \(requestString, privacy: .private)")
+            logger.debug("📤 [APIService] Sending request: \(requestString, privacy: .public)")
+            print("📤 [APIService] Request JSON length: \(requestString.count) characters")
+            // Log first part of request for debugging
+            let truncated = String(requestString.prefix(500))
+            print("📤 [APIService] Request start: \(truncated)...")
+
+            // Specifically check if calendarEvents are in the JSON
+            if requestString.contains("calendarEvents") {
+                print("✅ [APIService] Confirmed: calendarEvents included in JSON")
+            } else {
+                print("❌ [APIService] WARNING: calendarEvents NOT found in JSON!")
+            }
             #if DEBUG
             print("🟡 DEBUG: Sending request: \(requestString)")
             #endif
@@ -1038,6 +1131,9 @@ class SpendConscienceAPIService: ObservableObject {
         status += "  Loading: \(isLoading ? "🔄" : "✅")\n"
         status += "  Network: \(networkErrorHandler.connectionQuality.description)\n"
         
+        // Add calendar service status
+        status += "  Calendar Service: \(calendarService != nil ? "Available" : "Not initialized")\n"
+        
         // Add location status
         if let locationManager = locationManager {
             let authStatus = locationManager.authorizationStatus
@@ -1063,6 +1159,30 @@ class SpendConscienceAPIService: ObservableObject {
         status += "  Last Query: \(lastQuery.isEmpty ? "None" : lastQuery)\n"
         status += "  Response: \(currentResponse != nil ? "Available" : "None")"
         return status
+    }
+    
+    /// Debug method to test calendar service functionality
+    func debugCalendarService() async {
+        logger.debug("🔍 [APIService] debugCalendarService() called")
+        print("🔍 [APIService] debugCalendarService() called")
+        
+        do {
+            let calendarService = await getCalendarService()
+            logger.debug("✅ [APIService] Calendar service obtained in debug method")
+            print("✅ [APIService] Calendar service obtained in debug method")
+            
+            let events = await calendarService.fetchRemainingMonthEvents()
+            logger.info("📊 [APIService] Debug: Fetched \(events.count) events")
+            print("📊 [APIService] Debug: Fetched \(events.count) events")
+            
+            for (index, event) in events.enumerated() {
+                logger.debug("📝 [APIService] Debug Event \(index + 1): '\(event.title)' - \(event.eventType.rawValue)")
+                print("📝 [APIService] Debug Event \(index + 1): '\(event.title)' - \(event.eventType.rawValue)")
+            }
+        } catch {
+            logger.error("❌ [APIService] Debug calendar service error: \(error.localizedDescription)")
+            print("❌ [APIService] Debug calendar service error: \(error.localizedDescription)")
+        }
     }
     
     /// Logs the current service status
@@ -1310,7 +1430,7 @@ private extension SpendConscienceAPIService {
 #if DEBUG
 extension SpendConscienceAPIService {
     static let preview: SpendConscienceAPIService = {
-        let service = SpendConscienceAPIService(baseURL: "http://localhost:4001")
+        let service = SpendConscienceAPIService(baseURL: "http://localhost:4001", calendarService: nil)
         service.isConnected = true
         service.currentResponse = SpendConscienceData(
             query: "Can I afford a $50 dinner?",
