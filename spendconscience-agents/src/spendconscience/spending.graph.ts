@@ -15,12 +15,8 @@ const budgetTool = mcpTool({
   description: 'Fetch user budget limits and spending targets by category',
 });
 
-const calendarTool = mcpTool({
-  id: 'calendar-events-tool',
-  name: 'Calendar Events',
-  serverUrl: 'http://localhost:8003/mcp', // TODO: Implement calendar integration MCP server
-  description: 'Fetch upcoming calendar events with estimated costs for financial planning',
-});
+// Calendar integration now handled directly via API request data
+// No longer needs separate MCP server - calendar events are passed directly
 
 const googleMapsTool = mcpTool({
   id: 'google-maps-tool',
@@ -56,15 +52,15 @@ When spending approaches limits, clearly state the percentage used and remaining
 
 const futureCommitments = agent({
   id: 'future-commitments',
-  name: 'Future Commitments Analyzer', 
+  name: 'Future Commitments Analyzer',
   description: 'Analyzes upcoming calendar events and recurring expenses to predict future spending',
   prompt: `You are a financial planning specialist focused on upcoming expenses. Your responsibilities:
-1. Review calendar events for potential costs (dinners, events, travel)
+1. Analyze calendar events data provided in the context for potential costs (dinners, events, travel)
 2. Identify recurring commitments and their financial impact
 3. Estimate total upcoming expenses for the requested timeframe
 4. Flag any large or unusual upcoming expenses
-Provide clear cost projections and highlight any concerning patterns.`,
-  canUse: () => [calendarTool],
+Provide clear cost projections and highlight any concerning patterns. Calendar data is provided directly in the request context.`,
+  canUse: () => [], // Calendar data now provided directly in context
 });
 
 const alternativeFinder = agent({
