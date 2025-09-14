@@ -56,7 +56,7 @@ class TransactionHistoryViewModel: ObservableObject {
 
     // MARK: - Dependencies
 
-    private let dataManager: DataManager
+    let dataManager: DataManager
     private var cancellables = Set<AnyCancellable>()
     private var isBatchUpdating = false
 
