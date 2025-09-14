@@ -26,110 +26,67 @@ enum PermissionStatus {
 
 struct ContentView: View {
     @EnvironmentObject private var permissionManager: PermissionManager
+    @EnvironmentObject private var userManager: UserManager
     @EnvironmentObject private var plaidService: PlaidService
     @Environment(\.modelContext) private var modelContext
     @State private var dataManager: DataManager?
-    @State private var transactionStore: TransactionStore?
     @State private var showPermissionSheet = false
-    @State private var showTransactionList = false
-    @State private var showBudgetDashboard = false
-    @State private var navigationPath = NavigationPath()
     @State private var showModelContextError = false
     @State private var modelContextErrorMessage = ""
+    
+    // App-level dark mode control
+    @AppStorage("darkModeEnabled") var darkModeEnabled = false
 
     private let logger = Logger(subsystem: "SpendConscience", category: "ContentView")
-
-    private enum Destination: Hashable {
-        case budgetDashboard
-    }
     
     var body: some View {
-        NavigationStack(path: $navigationPath) {
-            VStack(spacing: 30) {
+        Group {
+            if !userManager.isAuthenticated {
+                AuthenticationView()
+            } else {
+                authenticatedView
+            }
+        }
+        .preferredColorScheme(darkModeEnabled ? .dark : .light)
+    }
+    
+    private var authenticatedView: some View {
+        Group {
+            if let dataManager = dataManager {
+                MainTabView()
+                    .environmentObject(userManager)
+                    .environmentObject(dataManager)
+            } else {
                 VStack {
-                    Text("SpendConscience")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Text("Your Autonomous Budgeting Agent")
+                    ProgressView("Loading...")
+                        .progressViewStyle(CircularProgressViewStyle())
+                    Text("Initializing your budget data...")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                
-                // Permission status indicator
-                if permissionManager.needsPermissions {
-                    PermissionStatusView(showPermissionSheet: $showPermissionSheet)
-                }
-                
-                // Model context error banner
-                if showModelContextError {
-                    ErrorBannerView(message: modelContextErrorMessage) {
-                        showModelContextError = false
-                    }
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 16) {
-                    Button("Get Started") {
-                        if permissionManager.needsPermissions {
-                            showPermissionSheet = true
-                        } else {
-                            // Navigation to onboarding
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    
-                    Button("View Budget") {
-                        if permissionManager.needsPermissions {
-                            showPermissionSheet = true
-                        } else {
-                            navigationPath.append(Destination.budgetDashboard)
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .disabled(permissionManager.needsPermissions || dataManager == nil)
-                    
-                    // Plaid Testing Interface
-                    if let transactionStore = transactionStore {
-                        PlaidTestingView(showTransactionList: $showTransactionList)
-                            .environmentObject(plaidService)
-                            .environmentObject(transactionStore)
-                    }
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Budget Overview")
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showPermissionSheet) {
-                PermissionRequestView()
-                    .environmentObject(permissionManager)
-            }
-            .sheet(isPresented: $showTransactionList) {
-                if let transactionStore = transactionStore {
-                    TransactionListView()
-                        .environmentObject(plaidService)
-                        .environmentObject(transactionStore)
+                        .padding(.top, 8)
                 }
             }
-            .navigationDestination(for: Destination.self) { destination in
-                switch destination {
-                case .budgetDashboard:
-                    if let dataManager = dataManager {
-                        BudgetDashboardView(dataManager: dataManager)
-                    } else {
-                        Text("Loading...")
-                            .navigationTitle("Budget Dashboard")
-                    }
-                }
+        }
+        .sheet(isPresented: $showPermissionSheet) {
+            PermissionRequestView()
+                .environmentObject(permissionManager)
+        }
+        .onAppear {
+            initializeDataManagers()
+            // Check if permissions are needed after authentication
+            if userManager.isAuthenticated && permissionManager.needsPermissions {
+                showPermissionSheet = true
             }
-            .onAppear {
+        }
+        .onChange(of: userManager.isAuthenticated) { _, isAuthenticated in
+            if isAuthenticated {
                 initializeDataManagers()
+                // Show permission sheet if permissions are needed after authentication
+                if permissionManager.needsPermissions {
+                    showPermissionSheet = true
+                }
+            } else {
+                dataManager = nil
             }
         }
     }
@@ -141,10 +98,6 @@ struct ContentView: View {
         if dataManager == nil {
             dataManager = DataManager(modelContext: modelContext)
             logger.info("DataManager initialized successfully")
-        }
-        if transactionStore == nil {
-            transactionStore = TransactionStore(modelContext: modelContext)
-            logger.info("TransactionStore initialized successfully")
         }
     }
 }
@@ -179,42 +132,6 @@ struct ErrorBannerView: View {
     }
 }
 
-// MARK: - Permission Status View
-
-struct PermissionStatusView: View {
-    @EnvironmentObject private var permissionManager: PermissionManager
-    @Binding var showPermissionSheet: Bool
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
-                Text("Permissions Required")
-                    .font(.headline)
-                Spacer()
-            }
-            
-            Text("SpendConscience needs access to your calendar and notifications to provide proactive budget guidance and spending alerts.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.leading)
-            
-            Button("Grant Permissions") {
-                showPermissionSheet = true
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
 
 // MARK: - Permission Request Sheet
 
@@ -343,82 +260,6 @@ struct PermissionItemView: View {
     }
 }
 
-// MARK: - Plaid Testing View
-
-struct PlaidTestingView: View {
-    @EnvironmentObject private var plaidService: PlaidService
-    @Binding var showTransactionList: Bool
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Service Status
-            HStack {
-                Image(systemName: "creditcard.fill")
-                    .foregroundColor(.blue)
-                Text("Plaid Integration")
-                    .font(.headline)
-                Spacer()
-                
-                if plaidService.isLoading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                } else {
-                    Image(systemName: plaidService.isConnected ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(plaidService.isConnected ? .green : .gray)
-                }
-            }
-            
-            // Connection Info
-            if plaidService.isConnected {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Connected • \(plaidService.accounts.count) accounts • \(plaidService.transactions.count) transactions")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Error Display
-            if let error = plaidService.currentError {
-                Text("Error: \(error.localizedDescription)")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.leading)
-            }
-            
-            // Action Buttons
-            HStack(spacing: 12) {
-                Button("Test Connection") {
-                    Task {
-                        await plaidService.initializePlaidConnection()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(plaidService.isLoading)
-                
-                Button("Refresh Data") {
-                    Task {
-                        await plaidService.refreshData()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(!plaidService.isConnected || plaidService.isLoading)
-                
-                if !plaidService.transactions.isEmpty {
-                    Button("View Transactions") {
-                        showTransactionList = true
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                }
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
 
 #Preview {
     ContentView()

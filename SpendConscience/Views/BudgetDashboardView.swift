@@ -12,12 +12,11 @@ import UIKit
 #endif
 
 struct BudgetDashboardView: View {
-    @ObservedObject var dataManager: DataManager
+    @EnvironmentObject var dataManager: DataManager
     let onAddBudget: (() -> Void)?
     @State private var isRefreshing = false
     
-    init(dataManager: DataManager, onAddBudget: (() -> Void)? = nil) {
-        self.dataManager = dataManager
+    init(onAddBudget: (() -> Void)? = nil) {
         self.onAddBudget = onAddBudget
     }
     
@@ -415,24 +414,29 @@ struct BudgetDashboardView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             // Preview with data
-            BudgetDashboardView(dataManager: previewDataManager())
+            BudgetDashboardView()
+                .environmentObject(previewDataManager())
                 .previewDisplayName("With Data")
             
             // Preview with empty state
-            BudgetDashboardView(dataManager: emptyDataManager())
+            BudgetDashboardView()
+                .environmentObject(emptyDataManager())
                 .previewDisplayName("Empty State")
             
             // Preview with loading state
-            BudgetDashboardView(dataManager: loadingDataManager())
+            BudgetDashboardView()
+                .environmentObject(loadingDataManager())
                 .previewDisplayName("Loading State")
             
             // Dark mode preview
-            BudgetDashboardView(dataManager: previewDataManager())
+            BudgetDashboardView()
+                .environmentObject(previewDataManager())
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Dark Mode")
             
             // iPad preview
-            BudgetDashboardView(dataManager: previewDataManager())
+            BudgetDashboardView()
+                .environmentObject(previewDataManager())
                 .previewDevice("iPad Pro (12.9-inch) (6th generation)")
                 .previewDisplayName("iPad")
         }

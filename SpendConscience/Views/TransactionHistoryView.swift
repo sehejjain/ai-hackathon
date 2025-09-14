@@ -2,96 +2,107 @@ import SwiftUI
 import SwiftData
 
 struct TransactionHistoryView: View {
-    @StateObject private var viewModel: TransactionHistoryViewModel
+    @EnvironmentObject var dataManager: DataManager
+    @State private var viewModel: TransactionHistoryViewModel?
     @State private var showingEditView = false
     @State private var selectedTransaction: Transaction?
     @State private var showingFilters = false
     @State private var transactionToDelete: Transaction?
     @State private var showingDeleteConfirmation = false
 
-    init(dataManager: DataManager) {
-        self._viewModel = StateObject(wrappedValue: TransactionHistoryViewModel(dataManager: dataManager))
-    }
-
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                searchBar
+        Group {
+            if let viewModel = viewModel {
+                VStack(spacing: 0) {
+                    searchBar(viewModel: viewModel)
 
-                if viewModel.hasActiveFilters {
-                    activeFiltersBar
+                    if viewModel.hasActiveFilters {
+                        activeFiltersBar(viewModel: viewModel)
+                    }
+
+                    transactionsList(viewModel: viewModel)
                 }
+                .navigationTitle("Transaction History")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
+                            Button {
+                                showingFilters = true
+                            } label: {
+                                Label("Filters", systemImage: "line.horizontal.3.decrease.circle")
+                            }
 
-                transactionsList
-            }
-            .navigationTitle("Transaction History")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button {
-                            showingFilters = true
-                        } label: {
-                            Label("Filters", systemImage: "line.horizontal.3.decrease.circle")
-                        }
-
-                        Menu("Group By") {
-                            ForEach(TransactionHistoryViewModel.GroupingMode.allCases, id: \.self) { mode in
-                                Button {
-                                    viewModel.groupingMode = mode
-                                } label: {
-                                    HStack {
-                                        Text(mode.displayName)
-                                        if viewModel.groupingMode == mode {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
+                            Menu("Group By") {
+                                ForEach(TransactionHistoryViewModel.GroupingMode.allCases, id: \.self) { mode in
+                                    Button {
+                                        viewModel.groupingMode = mode
+                                    } label: {
+                                        HStack {
+                                            Text(mode.displayName)
+                                            if viewModel.groupingMode == mode {
+                                                Spacer()
+                                                Image(systemName: "checkmark")
+                                            }
                                         }
                                     }
                                 }
                             }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
                 }
-            }
-            .sheet(isPresented: $showingFilters) {
-                FiltersView(viewModel: viewModel)
-            }
-            .sheet(item: $selectedTransaction) { transaction in
-                TransactionEditView(transaction: transaction, dataManager: viewModel.dataManager) {
-                    selectedTransaction = nil
-                }
-            }
-            .alert("Delete Transaction", isPresented: $showingDeleteConfirmation, presenting: transactionToDelete) { transaction in
-                Button("Cancel", role: .cancel) {
-                    transactionToDelete = nil
-                }
-                Button("Delete", role: .destructive) {
-                    Task {
-                        _ = await viewModel.dataManager.deleteTransaction(transaction)
+                .sheet(isPresented: $showingFilters) {
+                    if let vm = self.viewModel {
+                        FiltersView(viewModel: vm)
                     }
-                    transactionToDelete = nil
                 }
-            } message: { transaction in
-                Text("Are you sure you want to delete this transaction? This action cannot be undone.")
+                .sheet(item: $selectedTransaction) { transaction in
+                    TransactionEditView(transaction: transaction, dataManager: dataManager) {
+                        selectedTransaction = nil
+                    }
+                }
+                .alert("Delete Transaction", isPresented: $showingDeleteConfirmation, presenting: transactionToDelete) { transaction in
+                    Button("Cancel", role: .cancel) {
+                        transactionToDelete = nil
+                    }
+                    Button("Delete", role: .destructive) {
+                        Task {
+                            _ = await dataManager.deleteTransaction(transaction)
+                        }
+                        transactionToDelete = nil
+                    }
+                } message: { transaction in
+                    Text("Are you sure you want to delete this transaction? This action cannot be undone.")
+                }
+            } else {
+                ProgressView("Loading...")
+            }
+        }
+        .onAppear {
+            if viewModel == nil {
+                viewModel = TransactionHistoryViewModel(dataManager: dataManager)
             }
         }
     }
 
-    private var searchBar: some View {
+    private func searchBar(viewModel: TransactionHistoryViewModel) -> some View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
 
-            TextField("Search transactions...", text: $viewModel.searchText)
+            TextField("Search transactions...", text: Binding(
+                get: { viewModel.searchText },
+                set: { viewModel.searchText = $0 }
+            ))
                 .textFieldStyle(RoundedBorderTextFieldStyle())
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
 
-    private var activeFiltersBar: some View {
+    private func activeFiltersBar(viewModel: TransactionHistoryViewModel) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 if !viewModel.searchText.isEmpty {
@@ -133,7 +144,7 @@ struct TransactionHistoryView: View {
         .background(Color(.systemGray6))
     }
 
-    private var transactionsList: some View {
+    private func transactionsList(viewModel: TransactionHistoryViewModel) -> some View {
         Group {
             if viewModel.filteredTransactions.isEmpty {
                 EmptyStateView(hasFilters: viewModel.hasActiveFilters)
@@ -369,6 +380,7 @@ struct EmptyStateView: View {
     let container = try! ModelContainer(for: Transaction.self, Budget.self, configurations: config)
     let dataManager = DataManager(modelContext: container.mainContext)
 
-    TransactionHistoryView(dataManager: dataManager)
+    TransactionHistoryView()
+        .environmentObject(dataManager)
 }
 #endif
