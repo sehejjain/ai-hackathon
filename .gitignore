@@ -90,3 +90,11 @@ iOSInjectionProject/
 
 # macOS
 .DS_Store
+
+# Configuration files with secrets
+Config.Development.xcconfig
+Config.Development.plist
+Config.Local.xcconfig
+.env
+.env.local
+.env.development

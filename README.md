@@ -1,5 +1,29 @@
 # SpendConscience: Autonomous iOS Budgeting Agent
 
+## 🚀 Quick Start for Developers
+
+**New to the project? Get set up in 2 minutes:**
+
+1. **Get your Plaid API credentials** and add them to your shell:
+   ```bash
+   export PLAID_CLIENT="your_client_id"
+   export PLAID_SANDBOX_API="your_sandbox_secret"
+   ```
+
+2. **Run the setup script:**
+   ```bash
+   ./setup-development.sh
+   ```
+
+3. **Build and test:**
+   ```bash
+   xcodebuild test -project SpendConscience.xcodeproj -scheme SpendConscience -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6'
+   ```
+
+**📋 For detailed setup instructions, see [TEAM_SETUP.md](TEAM_SETUP.md)**
+
+---
+
 ## Project Overview
 
 SpendConscience is a truly local-first iOS application that acts as an autonomous financial coach, helping users stay within their budgets through intelligent interventions and proactive spending guidance. Unlike traditional budgeting apps that simply track expenses after the fact, SpendConscience takes preventive action by analyzing spending patterns, calendar events, and financial goals to intervene before overspending occurs.

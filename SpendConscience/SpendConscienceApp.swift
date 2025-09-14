@@ -7,7 +7,9 @@ import EventKit
 struct SpendConscienceApp: App {
     @AppStorage("permissionsChecked") private var permissionsChecked = false
     @StateObject private var permissionManager = PermissionManager()
-
+    @StateObject private var plaidService = PlaidService()
+    
+    // Combined model container with both new models and Plaid integration support
     var modelContainer: ModelContainer {
         do {
             let container = try ModelContainer(for: Transaction.self, Budget.self)
@@ -37,11 +39,12 @@ struct SpendConscienceApp: App {
             }
         }
     }
-
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(permissionManager)
+                .environmentObject(plaidService)
                 .onAppear {
                     if !permissionsChecked {
                         checkPermissionStatuses()

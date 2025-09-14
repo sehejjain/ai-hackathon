@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#F4F5F7" stroke="#333" stroke-width="4"/>
+  
+  <!-- Wallet body -->
+  <rect x="28" y="48" width="72" height="40" rx="8" fill="#4CAF50" stroke="#2E7D32" stroke-width="4"/>
+  
+  <!-- Wallet flap -->
+  <path d="M28 56 H100 V48 A8 8 0 0 0 92 40 H36 A8 8 0 0 0 28 48 V56Z" fill="#66BB6A" stroke="#2E7D32" stroke-width="4"/>
+  
+  <!-- Guilt exclamation mark -->
+  <circle cx="96" cy="48" r="12" fill="#F44336" stroke="#B71C1C" stroke-width="3"/>
+  <rect x="94" y="40" width="4" height="10" fill="white"/>
+  <circle cx="96" cy="54" r="2" fill="white"/>
+</svg>
+
