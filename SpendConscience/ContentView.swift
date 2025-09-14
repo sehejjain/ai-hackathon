@@ -33,6 +33,7 @@ struct ContentView: View {
     @State private var showPermissionSheet = false
     @State private var showTransactionList = false
     @State private var showBudgetDashboard = false
+    @State private var showAIAssistant = false
     @State private var navigationPath = NavigationPath()
     @State private var showModelContextError = false
     @State private var modelContextErrorMessage = ""
@@ -51,10 +52,19 @@ struct ContentView: View {
                         .font(.largeTitle)
                         .fontWeight(.bold)
                     
-                    Text("Your Autonomous Budgeting Agent")
+                    Text("Your Autonomous AI Financial Agent")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "brain.head.profile")
+                            .foregroundColor(.blue)
+                        Text("Powered by 4-Agent Intelligence")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.top, 4)
                 }
                 
                 // Permission status indicator
@@ -72,6 +82,28 @@ struct ContentView: View {
                 Spacer()
                 
                 VStack(spacing: 16) {
+                    // AI Assistant - Primary Action
+                    VStack(spacing: 8) {
+                        Button("🤖 Ask AI Financial Team") {
+                            if permissionManager.needsPermissions {
+                                showPermissionSheet = true
+                            } else {
+                                showAIAssistant = true
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        
+                        Text("Get instant advice from Budget Analyzer, Affordability Agent, Future Commitments & Financial Coach")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    Divider()
+                        .padding(.vertical, 4)
+                    
+                    // Traditional Actions
                     Button("Get Started") {
                         if permissionManager.needsPermissions {
                             showPermissionSheet = true
@@ -79,10 +111,10 @@ struct ContentView: View {
                             // Navigation to onboarding
                         }
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .controlSize(.large)
                     
-                    Button("View Budget") {
+                    Button("View Budget Dashboard") {
                         if permissionManager.needsPermissions {
                             showPermissionSheet = true
                         } else {
@@ -116,6 +148,9 @@ struct ContentView: View {
                         .environmentObject(plaidService)
                         .environmentObject(transactionStore)
                 }
+            }
+            .sheet(isPresented: $showAIAssistant) {
+                AIFinancialAssistantView()
             }
             .navigationDestination(for: Destination.self) { destination in
                 switch destination {

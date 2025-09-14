@@ -188,7 +188,7 @@ Config.Development.xcconfig
 Config.Production.xcconfig
 Config.Local.xcconfig
 
-# Keep Config.Development.plist but ignore production configs
+# Ignore production configs but keep development config
 Config.Production.plist
 Config.Local.plist
 

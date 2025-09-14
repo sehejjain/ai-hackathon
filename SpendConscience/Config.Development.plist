@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PlaidClientID</key>
+	<string>68c5e4fe8556db00239ce996</string>
+	<key>PlaidSandboxAPI</key>
+	<string>1b2728de4c3caa8f1c7c51dbd124d6</string>
+	<key>Environment</key>
+	<string>sandbox</string>
+	<key>DebugMode</key>
+	<true/>
+	<key>SpendConscienceAPIURL</key>
+	<string>https://your-project-name.vercel.app</string>
+	<key>EnableAIAssistant</key>
+	<true/>
+</dict>
+</plist>
