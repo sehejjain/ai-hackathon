@@ -20,7 +20,7 @@ struct MainTabView: View {
                 BudgetDashboardView()
                     .environmentObject(dataManager)
                     .environment(\.modelContext, modelContext)
-                    .navigationTitle("Home")
+                    .navigationTitle("Budget Dashboard")
                     .navigationBarTitleDisplayMode(.large)
             }
             .tabItem {
@@ -30,9 +30,11 @@ struct MainTabView: View {
             .accessibilityLabel("Home tab, Budget Dashboard")
             
             // Expenses Tab - Unified Expenses View
-            ExpensesView()
-                .environmentObject(dataManager)
-                .environment(\.modelContext, modelContext)
+            NavigationStack {
+                ExpensesView()
+                    .environmentObject(dataManager)
+                    .environment(\.modelContext, modelContext)
+            }
             .tabItem {
                 Image(systemName: "creditcard.fill")
                 Text("Expenses")

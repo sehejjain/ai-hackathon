@@ -27,7 +27,6 @@ enum PermissionStatus {
 struct ContentView: View {
     @EnvironmentObject private var permissionManager: PermissionManager
     @EnvironmentObject private var userManager: UserManager
-    @EnvironmentObject private var plaidService: PlaidService
     @Environment(\.modelContext) private var modelContext
     @State private var dataManager: DataManager?
     @State private var showPermissionSheet = false
@@ -81,7 +80,7 @@ struct ContentView: View {
         .onChange(of: userManager.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated {
                 initializeDataManagers()
-                // Show permission sheet if permissions are needed after authentication
+                // Trigger permission request immediately after authentication
                 if permissionManager.needsPermissions {
                     showPermissionSheet = true
                 }

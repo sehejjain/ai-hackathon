@@ -36,26 +36,11 @@ struct BudgetDashboardView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
             }
-            .refreshable {
-                await refreshData()
-            }
+        .refreshable {
+            await refreshData()
         }
-        .navigationTitle("Budget Dashboard")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    Task {
-                        await refreshData()
-                    }
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.primary)
-                }
-                .disabled(isRefreshing)
-            }
-        }
-        .overlay {
+    }
+    .overlay {
             if dataManager.isLoading && dataManager.budgets.isEmpty {
                 loadingView
             }
@@ -243,22 +228,22 @@ struct BudgetDashboardView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
             
-            Button(action: {
-                onAddBudget?()
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Add Budget")
+            if let onAddBudget = onAddBudget {
+                Button(action: onAddBudget) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Add Budget")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.accentColor)
+                    .cornerRadius(25)
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(Color.accentColor)
-                .cornerRadius(25)
+                .accessibilityLabel("Add your first budget")
+                .accessibilityHint("Tap to create a new budget")
             }
-            .accessibilityLabel("Add your first budget")
-            .accessibilityHint("Tap to create a new budget")
         }
         .padding(.vertical, 40)
         .frame(maxWidth: .infinity)
