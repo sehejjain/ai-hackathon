@@ -10,6 +10,13 @@ import Foundation
 /// Configuration manager for Plaid API credentials and environment settings
 class PlaidConfiguration {
     
+    // MARK: - Environment Variables Cache
+    
+    /// Cached configuration from plist file
+    private static let configVariables: [String: Any] = {
+        return ConfigurationLoader.load()
+    }()
+    
     // MARK: - Environment Detection
     
     /// Current environment (sandbox vs production)
@@ -23,22 +30,41 @@ class PlaidConfiguration {
     
     // MARK: - API Credentials
     
-    /// Plaid API secret from environment variables (renamed from apiKey for clarity)
+    /// Plaid API secret from configuration (renamed from apiKey for clarity)
     static var secret: String? {
         let key: String
         switch environment {
         case .sandbox:
-            key = "PLAID_SANDBOX_API"
+            key = "PlaidSandboxAPI"
         case .production:
-            key = "PLAID_SECRET"
+            key = "PlaidSecret"
         }
         
-        guard let secret = Bundle.main.infoDictionary?[key] as? String,
-              !secret.isEmpty else {
-            print("❌ PlaidConfiguration: \(key) not found or empty in Info.plist")
-            return nil
+        // 1. Try plist file first (for development)
+        if let configSecret = configVariables[key] as? String,
+           !configSecret.isEmpty {
+            print("✅ PlaidConfiguration: Found \(key) in Config.Development.plist")
+            return configSecret
         }
-        return secret
+        
+        // 2. Try environment variable (for testing/CI)
+        let envKey = key == "PlaidSandboxAPI" ? "PLAID_SANDBOX_API" : "PLAID_SECRET"
+        if let envSecret = ProcessInfo.processInfo.environment[envKey],
+           !envSecret.isEmpty {
+            print("✅ PlaidConfiguration: Found \(envKey) in environment variables")
+            return envSecret
+        }
+        
+        // 3. Fall back to Info.plist (from xcconfig)
+        if let secret = Bundle.main.infoDictionary?[envKey] as? String,
+           !secret.isEmpty {
+            print("✅ PlaidConfiguration: Found \(envKey) in Info.plist")
+            return secret
+        }
+        
+        print("❌ PlaidConfiguration: \(key) not found in plist, environment variables, or Info.plist")
+        print("   💡 Run ./setup-development.sh to configure your environment")
+        return nil
     }
     
     /// Legacy apiKey property for backward compatibility
@@ -47,14 +73,32 @@ class PlaidConfiguration {
         return secret
     }
     
-    /// Plaid client ID from environment variables
+    /// Plaid client ID from configuration
     static var clientId: String? {
-        guard let clientId = Bundle.main.infoDictionary?["PLAID_CLIENT"] as? String,
-              !clientId.isEmpty else {
-            print("❌ PlaidConfiguration: PLAID_CLIENT not found or empty in Info.plist")
-            return nil
+        // 1. Try plist file first (for development)
+        if let configClientId = configVariables["PlaidClientID"] as? String,
+           !configClientId.isEmpty {
+            print("✅ PlaidConfiguration: Found PlaidClientID in Config.Development.plist")
+            return configClientId
         }
-        return clientId
+        
+        // 2. Try environment variable (for testing/CI)
+        if let envClientId = ProcessInfo.processInfo.environment["PLAID_CLIENT"],
+           !envClientId.isEmpty {
+            print("✅ PlaidConfiguration: Found PLAID_CLIENT in environment variables")
+            return envClientId
+        }
+        
+        // 3. Fall back to Info.plist (from xcconfig)
+        if let clientId = Bundle.main.infoDictionary?["PLAID_CLIENT"] as? String,
+           !clientId.isEmpty {
+            print("✅ PlaidConfiguration: Found PLAID_CLIENT in Info.plist")
+            return clientId
+        }
+        
+        print("❌ PlaidConfiguration: PlaidClientID not found in plist, environment variables, or Info.plist")
+        print("   💡 Run ./setup-development.sh to configure your environment")
+        return nil
     }
     
     // MARK: - API Base URLs

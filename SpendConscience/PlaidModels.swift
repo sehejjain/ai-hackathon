@@ -10,16 +10,16 @@ import Foundation
 // MARK: - Transaction Model
 
 /// Represents a financial transaction from Plaid API
-struct Transaction: Codable, Identifiable, Equatable {
+struct PlaidTransaction: Codable, Identifiable, Equatable {
     let id: String
     let amount: Double
     let date: Date
     let name: String
-    let category: [String]
+    let category: [String]?
     let accountId: String
     let merchantName: String?
-    let pending: Bool
-    let transactionType: TransactionType
+    let pending: Bool?
+    let transactionType: TransactionType?
     
     enum CodingKeys: String, CodingKey {
         case id = "transaction_id"
@@ -31,6 +31,52 @@ struct Transaction: Codable, Identifiable, Equatable {
         case merchantName = "merchant_name"
         case pending
         case transactionType = "transaction_type"
+    }
+    
+    /// Custom decoder to handle various date formats and optional fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(String.self, forKey: .id)
+        amount = try container.decode(Double.self, forKey: .amount)
+        name = try container.decode(String.self, forKey: .name)
+        category = try container.decodeIfPresent([String].self, forKey: .category)
+        accountId = try container.decode(String.self, forKey: .accountId)
+        merchantName = try container.decodeIfPresent(String.self, forKey: .merchantName)
+        pending = try container.decodeIfPresent(Bool.self, forKey: .pending)
+        transactionType = try container.decodeIfPresent(TransactionType.self, forKey: .transactionType)
+        
+        // Handle date decoding - Plaid returns dates in YYYY-MM-DD format
+        let dateString = try container.decode(String.self, forKey: .date)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let parsedDate = formatter.date(from: dateString) {
+            date = parsedDate
+        } else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "Invalid date format: \(dateString)"
+            ))
+        }
+    }
+    
+    /// Custom encoder
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(amount, forKey: .amount)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(category, forKey: .category)
+        try container.encode(accountId, forKey: .accountId)
+        try container.encodeIfPresent(merchantName, forKey: .merchantName)
+        try container.encodeIfPresent(pending, forKey: .pending)
+        try container.encodeIfPresent(transactionType, forKey: .transactionType)
+        
+        // Encode date as string
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        try container.encode(formatter.string(from: date), forKey: .date)
     }
     
     /// Transaction type enumeration
@@ -47,6 +93,13 @@ struct Transaction: Codable, Identifiable, Equatable {
         
         init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
+            
+            // Handle case where transaction_type might be null
+            if container.decodeNil() {
+                self = .unresolved
+                return
+            }
+            
             let rawValue = try container.decode(String.self)
             
             switch rawValue {
@@ -85,7 +138,7 @@ struct Transaction: Codable, Identifiable, Equatable {
 // MARK: - Account Model
 
 /// Represents a financial account from Plaid API
-struct Account: Codable, Identifiable, Equatable {
+struct PlaidAccount: Codable, Identifiable, Equatable {
     let id: String
     let name: String
     let type: AccountType
@@ -424,8 +477,8 @@ struct PlaidBaseRequest: Codable {
 
 /// Response structure for transactions endpoint
 struct TransactionsResponse: Codable {
-    let accounts: [Account]
-    let transactions: [Transaction]
+    let accounts: [PlaidAccount]
+    let transactions: [PlaidTransaction]
     let totalTransactions: Int
     let requestId: String
     
@@ -439,7 +492,7 @@ struct TransactionsResponse: Codable {
 
 /// Response structure for accounts endpoint
 struct AccountsResponse: Codable {
-    let accounts: [Account]
+    let accounts: [PlaidAccount]
     let requestId: String
     
     enum CodingKeys: String, CodingKey {
@@ -477,6 +530,15 @@ struct SandboxPublicTokenOptions: Codable {
         case webhook
         case overrideUsername = "override_username"
         case overridePassword = "override_password"
+    }
+    
+    /// Creates options for dynamic transactions testing
+    static func dynamicTransactions() -> SandboxPublicTokenOptions {
+        return SandboxPublicTokenOptions(
+            webhook: nil,
+            overrideUsername: "user_transactions_dynamic",
+            overridePassword: "anything-nonblank"
+        )
     }
 }
 
@@ -565,6 +627,94 @@ struct AccountsGetRequest: Codable {
         case clientId = "client_id"
         case secret
         case accessToken = "access_token"
+    }
+}
+
+// MARK: - Transactions Sync Models
+
+/// Request structure for syncing transactions
+struct TransactionsSyncRequest: Codable {
+    let clientId: String
+    let secret: String
+    let accessToken: String
+    let cursor: String?
+    let count: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case clientId = "client_id"
+        case secret
+        case accessToken = "access_token"
+        case cursor
+        case count
+    }
+}
+
+/// Response structure for transactions sync
+struct TransactionsSyncResponse: Codable {
+    let added: [PlaidTransaction]
+    let modified: [PlaidTransaction]
+    let removed: [RemovedTransaction]
+    let nextCursor: String
+    let hasMore: Bool
+    let requestId: String
+    
+    enum CodingKeys: String, CodingKey {
+        case added
+        case modified
+        case removed
+        case nextCursor = "next_cursor"
+        case hasMore = "has_more"
+        case requestId = "request_id"
+    }
+}
+
+/// Structure for removed transactions
+struct RemovedTransaction: Codable {
+    let transactionId: String
+    
+    enum CodingKeys: String, CodingKey {
+        case transactionId = "transaction_id"
+    }
+}
+
+// MARK: - Sandbox Transaction Creation Models
+
+/// Request structure for creating sandbox transactions
+struct SandboxTransactionsCreateRequest: Codable {
+    let clientId: String
+    let secret: String
+    let accessToken: String
+    let transactions: [SandboxTransactionCreate]
+    
+    enum CodingKeys: String, CodingKey {
+        case clientId = "client_id"
+        case secret
+        case accessToken = "access_token"
+        case transactions
+    }
+}
+
+/// Structure for creating individual sandbox transactions
+struct SandboxTransactionCreate: Codable {
+    let amount: Double
+    let datePosted: String
+    let dateTransacted: String
+    let description: String
+    
+    enum CodingKeys: String, CodingKey {
+        case amount
+        case datePosted = "date_posted"
+        case dateTransacted = "date_transacted"
+        case description
+    }
+}
+
+/// Response structure for sandbox transaction creation
+struct SandboxTransactionsCreateResponse: Codable {
+    let requestId: String
+    
+    enum CodingKeys: String, CodingKey {
+        case requestId = "request_id"
     }
 }
 
