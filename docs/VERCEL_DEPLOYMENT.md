@@ -33,9 +33,9 @@ export default app;
 4. **Project settings**:
    - Framework Preset: `Other`
    - Root Directory: `spendconscience-agents`
-   - Build Command: `pnpm install` 
-   - Output Directory: (leave empty)
    - Install Command: `pnpm install`
+   - Build Command: `pnpm build`     # or `pnpm -w build` if using a workspace root
+   - Output Directory: (leave empty)
 
 5. **Environment Variables** (add these):
    ```

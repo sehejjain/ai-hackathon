@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "prestart": "npm run build",
+    "prestart": "pnpm run build",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/manage-api/src/index.js"
   },

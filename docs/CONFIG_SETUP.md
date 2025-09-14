@@ -8,17 +8,21 @@
    cp SpendConscience/Config.Development.plist.template SpendConscience/Config.Development.plist
    ```
 
-2. **Get your Plaid API keys**:
+2. **Get your Plaid API credentials**:
    - Sign up at [Plaid Dashboard](https://dashboard.plaid.com/)
    - Create a new app
-   - Copy your Client ID and Sandbox API key
+   - Copy your Client ID and Secret (use Sandbox secret for testing)
 
-3. **Update the plist files**:
-   - Replace `YOUR_PLAID_CLIENT_ID_HERE` with your actual Client ID
-   - Replace `YOUR_PLAID_SANDBOX_API_KEY_HERE` with your actual Sandbox API key
+3. **Update the plist files (development only)**:
    - Update `SpendConscienceAPIURL` with your deployed server URL
+   - The Plaid credentials are now stored server-side for security
 
 ## Important Security Notes
+
+⚠️ **Plaid credentials are handled server-side only!**
+- Client apps receive only ephemeral link_tokens from the backend
+- No Plaid secrets are stored in iOS app configuration
+- The backend handles all Plaid API communication securely
 
 ⚠️ **Never commit actual API keys to git!**
 - The `.gitignore` is configured to exclude `*.plist` files
@@ -29,7 +33,7 @@
 
 For deployment, use environment variables instead of plist files:
 - `PLAID_CLIENT_ID`
-- `PLAID_SANDBOX_API_KEY`
+- `PLAID_SECRET`
 - `PLAID_ENVIRONMENT=sandbox`
 
 See `VERCEL_DEPLOYMENT.md` for deployment instructions.

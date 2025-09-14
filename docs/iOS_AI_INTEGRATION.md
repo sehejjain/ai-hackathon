@@ -44,10 +44,21 @@ iOS App → SpendConscience API Server → Inkeep Agents → Plaid Data
 ```xml
 <key>NSAppTransportSecurity</key>
 <dict>
-  <key>NSAllowsArbitraryLoads</key><true/>
+  <key>NSExceptionDomains</key>
+  <dict>
+    <key>localhost</key>
+    <dict>
+      <key>NSExceptionAllowsInsecureHTTPLoads</key><true/>
+      <key>NSIncludesSubdomains</key><true/>
+    </dict>
+    <key>127.0.0.1</key>
+    <dict>
+      <key>NSExceptionAllowsInsecureHTTPLoads</key><true/>
+    </dict>
+  </dict>
 </dict>
 ```
-Prefer HTTPS in production and remove this for release builds.
+Remove these entries for Release builds or switch to HTTPS.
 
 ### Data Models
 - `SpendConscienceResponse` - API response structure

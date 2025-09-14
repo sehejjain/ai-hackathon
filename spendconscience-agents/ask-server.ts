@@ -8,29 +8,32 @@ app.use(express.json());
 
 // Initialize the spending graph
 let graphInitialized = false;
+let graphInitPromise: Promise<void> | null = null;
 
 const initializeGraph = async () => {
-  if (!graphInitialized) {
-    try {
-      console.log('🔧 Initializing SpendConscience agent graph...');
-      
-      // Set configuration for local development
-      spendingGraph.setConfig(
-        'spendconscience',  // tenantId
-        'default',         // projectId  
-        'http://localhost:3002' // apiUrl
-      );
-      
-      // Initialize the graph (this registers agents with the backend)
-      await spendingGraph.init();
-      graphInitialized = true;
-      console.log('✅ Agent graph initialized successfully');
-    } catch (error) {
-      console.error('❌ Failed to initialize agent graph:', error);
-      // For demo purposes, continue even if backend fails
-      graphInitialized = true;
-    }
+  if (graphInitialized) return;
+  if (!graphInitPromise) {
+    graphInitPromise = (async () => {
+      try {
+        console.log('🔧 Initializing SpendConscience agent graph...');
+        const TENANT = process.env.INKEEP_TENANT ?? 'spendconscience';
+        const PROJECT = process.env.INKEEP_PROJECT ?? 'default';
+        const API_URL = process.env.INKEEP_API_URL ?? 'http://localhost:3002';
+        spendingGraph.setConfig(TENANT, PROJECT, API_URL);
+        await spendingGraph.init();
+        graphInitialized = true;
+        console.log('✅ Agent graph initialized successfully');
+      } catch (error) {
+        console.error('❌ Failed to initialize agent graph:', error);
+        // Allow future retries
+        graphInitialized = false;
+        throw error;
+      } finally {
+        graphInitPromise = null;
+      }
+    })();
   }
+  return graphInitPromise;
 };
 
 // Health check endpoint
@@ -56,7 +59,29 @@ app.post('/ask', async (req, res) => {
     }
     
     // Ensure graph is initialized
-    await initializeGraph();
+    try {
+      await initializeGraph();
+    } catch (error) {
+      console.error('❌ Graph initialization failed, using fallback response');
+      const fallbackResponse = `I'm sorry, I'm having trouble connecting to my financial analysis systems right now. However, I can still offer some general advice about your query: "${query}".
+
+Based on common financial best practices:
+- Always check your current account balances before making purchases
+- Consider your monthly budget and upcoming expenses
+- Look for ways to save money or find alternatives when possible
+- Prioritize essential expenses over discretionary spending
+
+For detailed analysis of your specific financial situation, please try again in a moment when my systems are back online.`;
+
+      return res.json({
+        query,
+        userId: userId || 'anonymous',
+        response: fallbackResponse,
+        timestamp: new Date().toISOString(),
+        agent: 'SpendConscience Assistant (Fallback)',
+        note: 'Using fallback response due to agent initialization issues'
+      });
+    }
     
     console.log(`💬 Processing query for user ${userId}: "${query}"`);
     
@@ -108,14 +133,18 @@ app.post('/ask', async (req, res) => {
     console.error('❌ API Error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: error.message
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
 // Demo endpoint to test agent capabilities 
 app.get('/demo', async (req, res) => {
-  await initializeGraph();
+  try {
+    await initializeGraph();
+  } catch (error) {
+    console.warn('⚠️ Demo endpoint - graph initialization failed, proceeding anyway');
+  }
   
   const demoQueries = [
     "Can I afford a $50 dinner tonight?",

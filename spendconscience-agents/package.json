@@ -10,7 +10,7 @@
     "setup": "node scripts/setup.js",
     "dev:setup": "node scripts/dev-setup.js",
     "start": "npx tsx plaid-integration-server.ts",
-    "build": "pnpm install",
+    "build": "tsc --noEmit && echo 'TypeScript check passed'",
     "deploy:railway": "echo 'Deploy to Railway: Push to GitHub and Railway will auto-deploy'",
     "deploy:render": "echo 'Deploy to Render: Connect GitHub repo in Render dashboard'"
   },

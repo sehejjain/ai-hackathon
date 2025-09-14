@@ -37,7 +37,20 @@ app.get('/health', (req, res) => {
 // Main integration endpoint
 app.post('/ask', async (req, res) => {
   try {
-    const { query, userId = 'test-user', accessToken } = req.body;
+    const { 
+      query, 
+      userId = 'test-user', 
+      user_id, 
+      accessToken, 
+      access_token, 
+      lat, 
+      lng, 
+      coordinates 
+    } = req.body;
+
+    // Support both camelCase and snake_case for iOS compatibility
+    const finalUserId = userId || user_id || 'test-user';
+    const finalAccessToken = accessToken || access_token;
 
     if (!query) {
       return res.status(400).json({
@@ -46,7 +59,15 @@ app.post('/ask', async (req, res) => {
       });
     }
 
-    console.log(`📥 Received query: "${query}" for user: ${userId}`);
+    console.log(`📥 Received query: "${query}" for user: ${finalUserId}`);
+
+    // Parse location coordinates if provided
+    let userLocation = "37.7749,-122.4194"; // Default to SF
+    if (coordinates) {
+      userLocation = coordinates;
+    } else if (lat && lng) {
+      userLocation = `${lat},${lng}`;
+    }
 
     // For real integration, we would:
     // 1. Start the Plaid MCP server as a background process
@@ -54,19 +75,28 @@ app.post('/ask', async (req, res) => {
     // 3. Let Inkeep agents use real Plaid data through MCP tools
     
     // For now, let's simulate the integration workflow
-    const integrationResponse = await simulateIntegration(query, accessToken);
+    const integrationResponse = await simulateIntegration(query, finalAccessToken, userLocation);
+
+    // Ensure we have valid response data
+    if (!integrationResponse || !integrationResponse.response) {
+      throw new Error('Failed to generate response from integration');
+    }
+
+    const responseData = {
+      query,
+      user_id: finalUserId,
+      response: integrationResponse.response,
+      agent_flow: integrationResponse.agentFlow || [],
+      plaid_data: integrationResponse.plaidData || null,
+      timestamp: new Date().toISOString(),
+      mode: 'plaid-integration'
+    };
+
+    console.log(`✅ Sending response with ${responseData.agent_flow.length} agent steps`);
 
     res.json({
       success: true,
-      data: {
-        query,
-        userId,
-        response: integrationResponse.response,
-        agentFlow: integrationResponse.agentFlow,
-        plaidData: integrationResponse.plaidData,
-        timestamp: new Date().toISOString(),
-        mode: 'plaid-integration'
-      }
+      data: responseData
     });
 
   } catch (error) {
@@ -180,7 +210,7 @@ app.get('/demo', (req, res) => {
 });
 
 // Simulate the integration workflow
-async function simulateIntegration(query: string, accessToken?: string) {
+async function simulateIntegration(query: string, accessToken?: string, userLocation: string = "37.7749,-122.4194") {
   console.log('🔄 Simulating Plaid-Inkeep integration...');
 
   // Get real Plaid data
@@ -218,7 +248,7 @@ async function simulateIntegration(query: string, accessToken?: string) {
     if (triggerAlternatives && amount && (isOverFoodBudget || amount >= 50)) {
       // Alternative Finder scenario - get real restaurant alternatives
       console.log('🔍 Searching for real restaurant alternatives...');
-      const restaurantData = await searchNearbyRestaurants("37.7749,-122.4194", 2);
+      const restaurantData = await searchNearbyRestaurants(userLocation, 2);
       const restaurants = restaurantData.results;
 
       response = `⚠️ Hold up! You're at ${mockPlaidData.food_budget.percentage_used}% of your $${mockPlaidData.food_budget.monthly_limit} food budget and have a $100 fancy dinner next week. 
@@ -253,7 +283,7 @@ Your future self will thank you! 💪`;
       // Add real Google Maps data to plaidData
       (mockPlaidData as any).alternatives = {
         trigger_reason: `Food budget at ${mockPlaidData.food_budget.percentage_used}% + $100 dinner planned`,
-        search_location: "37.7749,-122.4194",
+        search_location: userLocation,
         api_source: "Google Places API",
         alternatives: restaurants.map((restaurant: any, index: number) => ({
           name: restaurant.name,
