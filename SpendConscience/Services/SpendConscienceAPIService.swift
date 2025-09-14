@@ -41,13 +41,6 @@ struct PlaidDataSummary: Codable {
     let spendingByCategory: [String: Double]
     let totalSpending: Double
     let availableFunds: Double
-    
-    enum CodingKeys: String, CodingKey {
-        case accounts
-        case spendingByCategory = "spending_by_category"
-        case totalSpending = "total_spending"
-        case availableFunds = "available_funds"
-    }
 }
 
 /// Account information from server
@@ -58,12 +51,6 @@ struct ServerAccount: Codable, Identifiable {
     let subtype: String
     let availableBalance: Double
     let currentBalance: Double
-    
-    enum CodingKeys: String, CodingKey {
-        case id, name, type, subtype
-        case availableBalance = "available_balance"
-        case currentBalance = "current_balance"
-    }
 }
 
 /// Request model for asking financial questions
@@ -208,6 +195,7 @@ class SpendConscienceAPIService: ObservableObject {
             // Debug: Log the request being sent
             if let requestString = String(data: requestData, encoding: .utf8) {
                 logger.debug("Sending request: \(requestString, privacy: .public)")
+                print("🟡 DEBUG: Sending request: \(requestString)")
             }
             
             var urlRequest = URLRequest(url: url)
@@ -223,18 +211,24 @@ class SpendConscienceAPIService: ObservableObject {
             
             // Debug: Log the response
             logger.debug("Response status: \(httpResponse.statusCode)")
+            print("🟡 DEBUG: Response status: \(httpResponse.statusCode)")
             if let responseString = String(data: data, encoding: .utf8) {
                 logger.debug("Response data: \(responseString, privacy: .public)")
+                print("🟡 DEBUG: Response data length: \(responseString.count)")
+                print("🟡 DEBUG: Response data: \(String(responseString.prefix(200)))...")
             }
             
             if 200...299 ~= httpResponse.statusCode {
                 // Debug: Check if data is empty
                 if data.isEmpty {
                     logger.error("Received empty data despite 200 status code")
+                    print("🔴 DEBUG: Received empty data despite 200 status code")
                     throw SpendConscienceAPIError.noData
                 }
                 
+                print("🟡 DEBUG: About to decode JSON response...")
                 let apiResponse = try decoder.decode(SpendConscienceResponse.self, from: data)
+                print("🟢 DEBUG: Successfully decoded JSON response!")
                 
                 if apiResponse.success, let data = apiResponse.data {
                     currentResponse = data
@@ -261,6 +255,8 @@ class SpendConscienceAPIService: ObservableObject {
             let apiError = SpendConscienceAPIError.decodingError("Failed to parse server response")
             currentError = apiError
             logger.error("Decoding error: \(error.localizedDescription, privacy: .public)")
+            print("🔴 DEBUG: Decoding error details: \(error)")
+            print("🔴 DEBUG: Decoding error localized: \(error.localizedDescription)")
         } catch let error as URLError {
             currentError = SpendConscienceAPIError.networkError(error.localizedDescription)
             logger.error("Network error: \(error.localizedDescription, privacy: .public)")
