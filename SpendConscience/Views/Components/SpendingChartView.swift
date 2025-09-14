@@ -304,18 +304,18 @@ struct SpendingChartView: View {
         monthlyData = []
         let calendar = Calendar.current
         let now = Date()
-        
+
         // Generate data for past 6 months
+        let monthFormatter = DateFormatter()
+        monthFormatter.dateFormat = "MMM"
         for i in (0..<6).reversed() {
             if let monthDate = calendar.date(byAdding: .month, value: -i, to: now) {
-                let monthFormatter = DateFormatter()
-                monthFormatter.dateFormat = "MMM"
                 let monthName = monthFormatter.string(from: monthDate)
-                
+
                 // Get spending for this month using DataManager
                 let monthlySpending = dataManager.getMonthlySpending(for: monthDate)
                 let totalAmount: Decimal = monthlySpending.values.reduce(Decimal(0), +)
-                
+
                 monthlyData.append(MonthlySpendingData(
                     month: monthName,
                     amount: totalAmount,
@@ -346,8 +346,10 @@ struct SpendingChartView: View {
     private func lineColor(for amount: Decimal) -> Color {
         let maxAmount = monthlyData.map { $0.amount }.max() ?? 0
         guard maxAmount > 0 else { return .gray }
-        let ratio = amount / maxAmount
-        
+        let maxDouble = NSDecimalNumber(decimal: maxAmount).doubleValue
+        let amountDouble = NSDecimalNumber(decimal: amount).doubleValue
+        let ratio = amountDouble / maxDouble
+
         if ratio < 0.33 {
             return .green
         } else if ratio < 0.66 {
@@ -358,7 +360,8 @@ struct SpendingChartView: View {
     }
     
     private func formatCurrency(_ amount: Decimal) -> String {
-        return Self.currencyFormatter.string(from: amount as NSDecimalNumber) ?? "$0.00"
+        let nsAmount = NSDecimalNumber(decimal: amount)
+        return Self.currencyFormatter.string(from: nsAmount) ?? "$0.00"
     }
     
     private var monthlyTrendAccessibilityDescription: String {

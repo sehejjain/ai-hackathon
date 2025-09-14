@@ -36,8 +36,12 @@ struct ContentView: View {
     @State private var navigationPath = NavigationPath()
     @State private var showModelContextError = false
     @State private var modelContextErrorMessage = ""
-    
+
     private let logger = Logger(subsystem: "SpendConscience", category: "ContentView")
+
+    private enum Destination: Hashable {
+        case budgetDashboard
+    }
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -82,7 +86,7 @@ struct ContentView: View {
                         if permissionManager.needsPermissions {
                             showPermissionSheet = true
                         } else {
-                            navigationPath.append("BudgetDashboard")
+                            navigationPath.append(Destination.budgetDashboard)
                         }
                     }
                     .buttonStyle(.bordered)
@@ -113,17 +117,15 @@ struct ContentView: View {
                         .environmentObject(transactionStore)
                 }
             }
-            .navigationDestination(for: String.self) { destination in
+            .navigationDestination(for: Destination.self) { destination in
                 switch destination {
-                case "BudgetDashboard":
+                case .budgetDashboard:
                     if let dataManager = dataManager {
                         BudgetDashboardView(dataManager: dataManager)
                     } else {
                         Text("Loading...")
                             .navigationTitle("Budget Dashboard")
                     }
-                default:
-                    Text("Unknown destination")
                 }
             }
             .onAppear {
