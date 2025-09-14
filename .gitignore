@@ -188,9 +188,13 @@ Config.Development.xcconfig
 Config.Production.xcconfig
 Config.Local.xcconfig
 
-# Ignore production configs but keep development config
+# All plist files that might contain API keys
+Config.Development.plist
 Config.Production.plist
 Config.Local.plist
+*.plist
+!Info.plist
+!**/Assets.xcassets/*/*.plist
 
 # Turbo
 .turbo/

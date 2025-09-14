@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>PlaidClientID</key>
-	<string>68c5e4fe8556db00239ce996</string>
+	<string>YOUR_PLAID_CLIENT_ID_HERE</string>
 	<key>PlaidSandboxAPI</key>
-	<string>1b2728de4c3caa8f1c7c51dbd124d6</string>
+	<string>YOUR_PLAID_SANDBOX_API_KEY_HERE</string>
 	<key>Environment</key>
 	<string>sandbox</string>
 	<key>DebugMode</key>
