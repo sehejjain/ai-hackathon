@@ -97,8 +97,8 @@ app.post('/ask', async (req, res) => {
     // 2. Configure Inkeep to connect to the MCP server
     // 3. Let Inkeep agents use real Plaid data through MCP tools
 
-    // For now, let's simulate the integration workflow with real calendar data
-    const integrationResponse = await simulateIntegration(query, finalAccessToken, userLocation, finalCalendarEvents);
+    // Use real LLM integration instead of simulation
+    const integrationResponse = await realLLMIntegration(query, finalAccessToken, userLocation, finalCalendarEvents);
 
     // Ensure we have valid response data
     if (!integrationResponse || !integrationResponse.response) {
@@ -232,208 +232,118 @@ app.get('/demo', (req, res) => {
   `);
 });
 
-// Simulate the integration workflow
-async function simulateIntegration(query: string, accessToken?: string, userLocation: string = "37.7749,-122.4194", calendarEvents: any[] = []) {
-  console.log('🔄 Simulating Plaid-Inkeep integration...');
+// OpenAI API call for financial advice
+async function callOpenAIForFinancialAdvice(query: string, plaidData: any, calendarEvents: any[], calendarAnalysis: any): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  // Create a comprehensive prompt with financial context
+  const prompt = `You are a professional financial advisor. Analyze the user's question and provide personalized advice based on their real financial data.
+
+USER QUESTION: "${query}"
+
+FINANCIAL DATA:
+- Available funds: $${plaidData.available_funds?.toLocaleString() || '0'}
+- Total monthly spending: $${plaidData.total_spending?.toLocaleString() || '0'}
+- Spending by category: ${JSON.stringify(plaidData.spending_by_category || {})}
+- Food budget status: ${plaidData.food_budget ? `$${plaidData.food_budget.spent_so_far}/$${plaidData.food_budget.monthly_limit} (${plaidData.food_budget.percentage_used}% used)` : 'Not available'}
+
+UPCOMING EVENTS:
+${calendarEvents.length > 0 ? calendarEvents.map(event => `- ${event.title} (${event.event_type}) - Estimated cost: $${event.estimated_cost || 0}`).join('\n') : '- No upcoming events'}
+
+CALENDAR ANALYSIS:
+- Total upcoming events: ${calendarAnalysis.totalEvents}
+- Total estimated cost: $${calendarAnalysis.totalCost?.toFixed(2) || '0'}
+- Expensive events: ${calendarAnalysis.expensiveEvents?.length || 0}
+
+Please provide specific, actionable financial advice that:
+1. References their actual account balances and spending patterns
+2. Considers their upcoming calendar commitments
+3. Gives concrete next steps
+4. Uses encouraging but realistic tone
+5. Includes specific dollar amounts and percentages when relevant
+
+Keep the response concise but comprehensive (under 300 words).`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional financial advisor providing personalized advice based on real financial data and calendar events. Be specific, actionable, and reference actual numbers from their financial situation.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response format from OpenAI API');
+    }
+
+    return data.choices[0].message.content.trim();
+
+  } catch (error) {
+    console.error('🔴 OpenAI API call failed:', error);
+    throw error;
+  }
+}
+
+// Real LLM integration replacing simulation
+async function realLLMIntegration(query: string, accessToken?: string, userLocation: string = "37.7749,-122.4194", calendarEvents: any[] = []) {
+  console.log('🤖 Making real LLM API call for financial analysis...');
   console.log(`🗓️ Analyzing ${calendarEvents.length} calendar events`);
 
   // Get real Plaid data
-  const mockPlaidData = await getPlaidData(accessToken);
+  const plaidData = await getPlaidData(accessToken);
 
   // Analyze calendar events for future commitments
   const calendarAnalysis = analyzeCalendarEvents(calendarEvents);
 
-  // Simulate agent flow based on query type
-  const agentFlow = [];
+  // Create agent flow for real LLM processing
+  const agentFlow = [
+    { agent: 'Budget Analyzer', action: 'Analyzing real Plaid financial data' },
+    { agent: 'Future Commitments', action: `Reviewing ${calendarEvents.length} upcoming calendar events` },
+    { agent: 'AI Financial Advisor', action: 'Processing query with LLM' }
+  ];
+
+  // Make real LLM API call
   let response = '';
-
-  // Check for Alternative Finder trigger scenario
-  const hasCurrentExpense = query.toLowerCase().includes('afford') && extractAmount(query);
-  const hasFuturePlanned = query.toLowerCase().includes('planned') || query.toLowerCase().includes('next week') || query.toLowerCase().includes('upcoming');
-  const triggerAlternatives = hasCurrentExpense && hasFuturePlanned;
-
-  if (query.toLowerCase().includes('afford')) {
-    // Affordability workflow
-    agentFlow.push({ agent: 'Budget Analyzer', action: `Analyzed real Plaid spending data - Food budget at ${mockPlaidData.food_budget.percentage_used}% of $${mockPlaidData.food_budget.monthly_limit} limit` });
-
-    // Use real calendar data instead of hardcoded scenario
-    if (calendarAnalysis.totalEvents > 0) {
-      agentFlow.push({ agent: 'Future Commitments', action: `Analyzed ${calendarAnalysis.totalEvents} upcoming events - Total estimated cost: $${calendarAnalysis.totalCost.toFixed(2)}` });
-      if (calendarAnalysis.expensiveEvents.length > 0) {
-        const expensiveEvent = calendarAnalysis.expensiveEvents[0];
-        agentFlow.push({ agent: 'Future Commitments', action: `Detected expensive event: ${expensiveEvent.title} ($${expensiveEvent.estimated_cost.toFixed(2)}) on ${new Date(expensiveEvent.start_date * 1000).toLocaleDateString()}` });
-      }
-    } else {
-      agentFlow.push({ agent: 'Future Commitments', action: 'No significant upcoming events detected for rest of month' });
-    }
-    
-    if (triggerAlternatives) {
-      agentFlow.push({ agent: 'Alternative Finder', action: 'Triggered due to budget strain + future commitments' });
-      agentFlow.push({ agent: 'Alternative Finder', action: 'Searched Google Maps for nearby affordable restaurants (maxprice=2)' });
-      agentFlow.push({ agent: 'Alternative Finder', action: 'Found 3 budget-friendly alternatives within 1500m' });
-    }
-    
-    agentFlow.push({ agent: 'Affordability Agent', action: 'Made decision using real account balances' });
-    agentFlow.push({ agent: 'Financial Coach', action: 'Generated advice with alternatives if applicable' });
-
-    const amount = extractAmount(query);
-    const availableFunds = mockPlaidData.available_funds;
-    const percentage = amount ? Math.round((amount / availableFunds) * 100) : 0;
-
-    // Check if this is a food expense when already at 95% of food budget
-    const isFoodExpense = query.toLowerCase().includes('dinner') || query.toLowerCase().includes('lunch') || query.toLowerCase().includes('restaurant') || query.toLowerCase().includes('meal');
-    const isOverFoodBudget = isFoodExpense && mockPlaidData.food_budget.percentage_used >= 95;
-
-    if (triggerAlternatives && amount && (isOverFoodBudget || amount >= 50)) {
-      // Alternative Finder scenario - get real restaurant alternatives
-      console.log('🔍 Searching for real restaurant alternatives...');
-      const restaurantData = await searchNearbyRestaurants(userLocation, 2);
-      const restaurants = restaurantData.results;
-
-      response = `⚠️ Hold up! You're at ${mockPlaidData.food_budget.percentage_used}% of your $${mockPlaidData.food_budget.monthly_limit} food budget and have a $100 fancy dinner next week. 
-
-**Current situation:**
-💰 Available funds: $${availableFunds.toLocaleString()}
-🍽️ Food budget used: $${mockPlaidData.food_budget.spent_so_far} / $${mockPlaidData.food_budget.monthly_limit} (${mockPlaidData.food_budget.percentage_used}%)
-💸 Only $${mockPlaidData.food_budget.remaining} left in food budget!
-📅 Upcoming: $100 fancy dinner planned
-
-**💡 Smart alternatives near you:**`;
-
-      // Add real restaurant alternatives
-      restaurants.forEach((restaurant: any, index: number) => {
-        const distance = (0.3 + index * 0.2).toFixed(1); // Simulate distances
-        const emoji = index === 0 ? '🌮' : index === 1 ? '🍜' : '🥗';
-        response += `
-${emoji} **${restaurant.name}** - ${distance} miles away
-   • Price: ${formatPriceLevel(restaurant.price_level)} • Rating: ${restaurant.rating}⭐
-   • Address: ${restaurant.vicinity}
-   • Estimated cost: ${restaurant.estimated_cost}`;
-      });
-
-      const cheapestCost = 15; // Use first restaurant's estimated low end
-      response += `
-
-**🎯 Recommendation:** 
-Skip the $${amount} tonight and try ${restaurants[0]?.name || 'a nearby alternative'} for ~$${cheapestCost}. That saves you $${amount - cheapestCost} to enjoy your planned $100 dinner worry-free! You'll stay within budget and still eat great food. 🌟
-
-Your future self will thank you! 💪`;
-
-      // Add real Google Maps data to plaidData
-      (mockPlaidData as any).alternatives = {
-        trigger_reason: `Food budget at ${mockPlaidData.food_budget.percentage_used}% + $100 dinner planned`,
-        search_location: userLocation,
-        api_source: "Google Places API",
-        alternatives: restaurants.map((restaurant: any, index: number) => ({
-          name: restaurant.name,
-          address: restaurant.vicinity,
-          price_level: restaurant.price_level,
-          rating: restaurant.rating,
-          estimated_cost: restaurant.estimated_cost,
-          distance: `${(0.3 + index * 0.2).toFixed(1)} miles`
-        })),
-        savings_potential: `$${amount - cheapestCost} saved vs planned expense`
-      };
-    } else if (amount && amount <= availableFunds * 0.1) {
-      response = `✅ Yes, you can afford this $${amount} expense! It represents ${percentage}% of your available funds ($${availableFunds.toLocaleString()}).
-
-Based on your real Plaid data:
-💰 **Available across all accounts:** $${availableFunds.toLocaleString()}
-📊 **Monthly spending so far:** $${mockPlaidData.total_spending.toLocaleString()}
-🎯 **Spending breakdown:** Food & Drink leads at $${mockPlaidData.spending_by_category['Food and Drink'].toLocaleString()}
-⚠️ **Food budget alert:** You've used ${mockPlaidData.food_budget.percentage_used}% of your $${mockPlaidData.food_budget.monthly_limit} monthly food budget
-
-💡 **Smart next steps:**
-1. This expense is affordable but watch your food budget
-2. You only have $${mockPlaidData.food_budget.remaining} left in food budget this month
-3. Consider meal prep to stretch your remaining food budget
-
-Stay mindful of your limits! 💪`;
-    } else if (amount && amount <= availableFunds * 0.3) {
-      response = `⚠️ You can afford this $${amount} expense, but let's be strategic. It's ${percentage}% of your available funds.
-
-Based on your real account data:
-💰 **Available funds:** $${availableFunds.toLocaleString()}
-📈 **Current spending:** $${mockPlaidData.total_spending.toLocaleString()} this month
-
-💡 **My recommendation:**
-1. This purchase is possible but significant
-2. Consider if this aligns with your financial goals
-3. Maybe look for a 10-20% discount or wait for a sale?
-
-You're in control - just make it intentional! 💪`;
-    } else {
-      response = `🚫 I'd recommend waiting on this $${amount} purchase. It would use ${percentage}% of your available funds, which could strain your finances.
-
-Your real financial picture:
-💰 **Available:** $${availableFunds.toLocaleString()}
-📊 **Already spent this month:** $${mockPlaidData.total_spending.toLocaleString()}
-
-💡 **Better plan:**
-1. Save $200-300/month toward this goal
-2. You could afford it in 2-3 months comfortably
-3. Look for similar alternatives at 50% less cost
-
-Your future self will thank you for waiting! 🎯`;
-    }
-
-  } else if (query.toLowerCase().includes('budget')) {
-    // Budget analysis workflow
-    agentFlow.push({ agent: 'Budget Analyzer', action: 'Analyzed Plaid spending by category' });
-    agentFlow.push({ agent: 'Financial Coach', action: 'Generated budget insights' });
-
-    response = `📊 **Your Budget Analysis (Real Plaid Data)**
-
-**This Month's Spending:**
-🍽️ Food & Drink: $${mockPlaidData.spending_by_category['Food and Drink'].toLocaleString()}
-🚗 Transportation: $${mockPlaidData.spending_by_category['Transportation'].toLocaleString()}
-🎬 Entertainment: $${mockPlaidData.spending_by_category['Entertainment'].toLocaleString()}
-🛍️ Shopping: $${mockPlaidData.spending_by_category['Shopping'].toLocaleString()}
-📱 Bills: $${mockPlaidData.spending_by_category['Bills'].toLocaleString()}
-
-**Total Spent:** $${mockPlaidData.total_spending.toLocaleString()}
-**Available Funds:** $${mockPlaidData.available_funds.toLocaleString()}
-
-💡 **Key Insights:**
-• Your food spending is quite high - consider meal planning
-• Transportation costs are reasonable
-• You have strong savings discipline with $8,945 in savings
-• Bills are consistent and manageable
-
-🎯 **Recommendations:**
-1. Try to reduce food spending by $200-300 next month
-2. Set up automatic $500 monthly savings transfer
-3. Your entertainment budget has room for fun!`;
-
-  } else {
-    // General financial advice
-    agentFlow.push({ agent: 'Budget Analyzer', action: 'Reviewed comprehensive Plaid data' });
-    agentFlow.push({ agent: 'Financial Coach', action: 'Generated personalized financial insights' });
-
-    response = `🌟 **Your Financial Health Check (Real Data)**
-
-**Strengths:**
-✅ Excellent savings balance: $8,945
-✅ Healthy checking account: $2,457
-✅ Bills are under control: $1,200/month
-
-**Opportunities:**
-📈 Food spending could be optimized
-💰 You could increase automated savings
-🎯 Emergency fund looks solid
-
-**Action Plan:**
-1. Set up $400/month automatic savings transfer
-2. Use the 50/30/20 rule: 50% needs, 30% wants, 20% savings
-3. Track weekly food spending to optimize
-
-You're doing great! Small tweaks will amplify your success. 🚀`;
+  try {
+    response = await callOpenAIForFinancialAdvice(query, plaidData, calendarEvents, calendarAnalysis);
+    agentFlow.push({ agent: 'AI Financial Advisor', action: 'Generated personalized financial advice using GPT-4' });
+  } catch (error) {
+    console.error('❌ LLM API call failed:', error);
+    // Fallback to a basic response if LLM fails
+    response = `I'm having trouble connecting to my AI systems right now. Based on your query "${query}", I'd recommend checking your current account balances and recent spending patterns before making financial decisions. Please try again in a moment.`;
+    agentFlow.push({ agent: 'System', action: 'Used fallback response due to API error' });
   }
 
   return {
     response,
     agentFlow,
-    plaidData: mockPlaidData
+    plaidData: plaidData
   };
 }
 
