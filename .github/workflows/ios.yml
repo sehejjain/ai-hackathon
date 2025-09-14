@@ -1,0 +1,37 @@
+name: iOS Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  SCHEME: "SpendConscience"
+  PROJECT: "SpendConscience.xcodeproj"
+  DESTINATION: "platform=iOS Simulator,name=iPhone 16"
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v3
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.swift', '**/*.xcodeproj/**') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-
+            
+      - name: Build and Test
+        run: |
+          xcodebuild test \
+            -scheme "$SCHEME" \
+            -project "$PROJECT" \
+            -destination "$DESTINATION" \
+            -enableCodeCoverage YES
