@@ -7,25 +7,44 @@ import EventKit
 struct SpendConscienceApp: App {
     @AppStorage("permissionsChecked") private var permissionsChecked = false
     @StateObject private var permissionManager = PermissionManager()
+    @StateObject private var plaidService = PlaidService()
     
-    private let container: ModelContainer = {
-        let schema = Schema([StoredTransaction.self, StoredAccount.self, CategoryTag.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        return try! ModelContainer(for: schema, configurations: [config])
-    }()
+    // Combined model container with both new models and Plaid integration support
+    var modelContainer: ModelContainer {
+        do {
+            let container = try ModelContainer(for: Transaction.self, Budget.self)
+            return container
+        } catch {
+            print("Failed to initialize ModelContainer: \(error)")
 
-    @StateObject private var transactionStore: TransactionStore
+            // Log detailed error for debugging
+            if let detailedError = error as? CocoaError {
+                print("CoreData Error Code: \(detailedError.code)")
+                print("CoreData Error Description: \(detailedError.localizedDescription)")
+            }
 
-    init() {
-        let context = ModelContext(container)
-        _transactionStore = StateObject(wrappedValue: TransactionStore(modelContext: context))
+            // Attempt to create a temporary container as fallback
+            do {
+                let tempContainer = try ModelContainer(
+                    for: Transaction.self, Budget.self,
+                    configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+                )
+                print("Created temporary in-memory container as fallback")
+                return tempContainer
+            } catch {
+                print("Failed to create fallback container: \(error)")
+
+                // Last resort: create minimal container
+                fatalError("Unable to initialize any ModelContainer. Please check your data model and try reinstalling the app.")
+            }
+        }
     }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(permissionManager)
-                .environmentObject(transactionStore)
+                .environmentObject(plaidService)
                 .onAppear {
                     if !permissionsChecked {
                         checkPermissionStatuses()
@@ -33,7 +52,7 @@ struct SpendConscienceApp: App {
                     }
                 }
         }
-        .modelContainer(container)
+        .modelContainer(modelContainer)
     }
     
     // MARK: - Permission Status Checking (No Prompts)
