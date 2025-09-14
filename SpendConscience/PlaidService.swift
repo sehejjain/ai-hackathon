@@ -24,10 +24,10 @@ class PlaidService: ObservableObject {
     @Published var currentError: PlaidError?
     
     /// Available accounts
-    @Published var accounts: [Account] = []
+    @Published var accounts: [PlaidAccount] = []
     
     /// Recent transactions
-    @Published var transactions: [Transaction] = []
+    @Published var transactions: [PlaidTransaction] = []
     
     /// Service initialization status
     @Published var isInitialized: Bool = false
@@ -90,8 +90,7 @@ class PlaidService: ObservableObject {
     
     // MARK: - Initialization
     
-    override init() {
-        super.init()
+    init() {
         initializeService()
         startNetworkMonitoring()
     }
@@ -216,9 +215,9 @@ class PlaidService: ObservableObject {
             let request = SandboxPublicTokenCreateRequest(
                 clientId: clientId,
                 secret: secret,
-                institutionId: SandboxInstitutions.default,
+                institutionId: SandboxInstitutions.firstPlatypus,
                 initialProducts: PlaidProducts.defaultSandbox,
-                options: nil
+                options: SandboxPublicTokenOptions.dynamicTransactions()
             )
             
             var urlRequest = try createBaseRequest(endpoint: "sandbox/public_token/create")
@@ -279,6 +278,68 @@ class PlaidService: ObservableObject {
         }
     }
     
+    /// Creates custom sandbox transactions for testing
+    func createSandboxTransactions() async throws {
+        guard isInitialized else {
+            throw PlaidError.invalidConfiguration
+        }
+        
+        guard let accessToken = accessToken else {
+            throw PlaidError.invalidCredentials
+        }
+        
+        print("💰 PlaidService: Creating custom sandbox transactions...")
+        
+        do {
+            guard let clientId = PlaidConfiguration.clientId,
+                  let secret = PlaidConfiguration.secret else {
+                throw PlaidError.missingCredentials
+            }
+            
+            let today = Date()
+            let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) ?? today
+            
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            
+            let customTransactions = [
+                SandboxTransactionCreate(
+                    amount: 12.34,
+                    datePosted: dateFormatter.string(from: today),
+                    dateTransacted: dateFormatter.string(from: today),
+                    description: "Coffee Corner"
+                ),
+                SandboxTransactionCreate(
+                    amount: 42.00,
+                    datePosted: dateFormatter.string(from: yesterday),
+                    dateTransacted: dateFormatter.string(from: yesterday),
+                    description: "Gas & Go"
+                )
+            ]
+            
+            let request = SandboxTransactionsCreateRequest(
+                clientId: clientId,
+                secret: secret,
+                accessToken: accessToken,
+                transactions: customTransactions
+            )
+            
+            var urlRequest = try createBaseRequest(endpoint: "sandbox/transactions/create")
+            urlRequest.httpBody = try jsonEncoder.encode(request)
+            
+            let _ = try await executeRequest(
+                request: urlRequest,
+                responseType: SandboxTransactionsCreateResponse.self
+            )
+            
+            print("✅ PlaidService: Created \(customTransactions.count) custom sandbox transactions")
+            
+        } catch {
+            print("❌ PlaidService: Failed to create sandbox transactions: \(error)")
+            throw error
+        }
+    }
+    
     /// Fetches user accounts
     func fetchAccounts() async {
         guard isInitialized else {
@@ -329,8 +390,8 @@ class PlaidService: ObservableObject {
         }
     }
     
-    /// Fetches user transactions
-    func fetchTransactions(startDate: Date? = nil, endDate: Date? = nil) async {
+    /// Syncs transactions using the transactions/sync endpoint
+    func fetchTransactions() async {
         guard isInitialized else {
             currentError = .invalidConfiguration
             return
@@ -346,11 +407,7 @@ class PlaidService: ObservableObject {
         defer { isLoading = false }
         currentError = nil
         
-        // Default to last 30 days if no dates provided
-        let endDate = endDate ?? Date()
-        let startDate = startDate ?? Calendar.current.date(byAdding: .day, value: -30, to: endDate) ?? endDate
-        
-        print("💳 PlaidService: Fetching transactions from \(plaidDateFormatter.string(from: startDate)) to \(plaidDateFormatter.string(from: endDate))")
+        print("� PlaidService: Syncing transactions...")
         
         do {
             guard let clientId = PlaidConfiguration.clientId,
@@ -359,48 +416,70 @@ class PlaidService: ObservableObject {
                 return
             }
             
-            var allTransactions: [Transaction] = []
-            var offset = 0
-            let count = 500
+            var allTransactions: [PlaidTransaction] = []
+            var cursor: String? = nil
+            var attempts = 0
+            let maxAttempts = 6
             
+            // Poll for transactions with retries (similar to Python example)
             repeat {
-                let options = TransactionsGetOptions(accountIds: nil, count: count, offset: offset)
-                let request = TransactionsGetRequest(
+                attempts += 1
+                print("🔄 PlaidService: Sync attempt \(attempts)/\(maxAttempts) (cursor: \(cursor ?? "nil"))")
+                
+                let request = TransactionsSyncRequest(
                     clientId: clientId,
                     secret: secret,
                     accessToken: accessToken,
-                    startDate: plaidDateFormatter.string(from: startDate),
-                    endDate: plaidDateFormatter.string(from: endDate),
-                    options: options
+                    cursor: cursor,
+                    count: nil
                 )
                 
-                var urlRequest = try createBaseRequest(endpoint: "transactions/get")
+                var urlRequest = try createBaseRequest(endpoint: "transactions/sync")
                 urlRequest.httpBody = try jsonEncoder.encode(request)
                 
                 let response = try await executeRequest(
                     request: urlRequest,
-                    responseType: TransactionsResponse.self
+                    responseType: TransactionsSyncResponse.self
                 )
                 
-                allTransactions.append(contentsOf: response.transactions)
+                // Add new transactions
+                allTransactions.append(contentsOf: response.added)
                 
-                // Update accounts if they're included in the response
-                if !response.accounts.isEmpty {
-                    self.accounts = response.accounts
-                }
+                // Update cursor for next iteration
+                cursor = response.nextCursor
                 
-                // Check if we need to fetch more transactions
-                if response.totalTransactions > allTransactions.count {
-                    offset += count
-                    print("📄 PlaidService: Fetched \(allTransactions.count)/\(response.totalTransactions) transactions, continuing...")
-                } else {
+                print("📄 PlaidService: Added \(response.added.count) transactions (total: \(allTransactions.count))")
+                
+                // If we got transactions, break out of retry loop
+                if !allTransactions.isEmpty {
                     break
                 }
                 
-            } while true
+                // Wait before next attempt (like Python example)
+                if attempts < maxAttempts {
+                    try await Task.sleep(for: .seconds(5))
+                }
+                
+            } while attempts < maxAttempts
             
             self.transactions = allTransactions
-            print("✅ PlaidService: Fetched \(allTransactions.count) transactions")
+            
+            if allTransactions.isEmpty {
+                print("⚠️ PlaidService: No transactions found after \(attempts) attempts")
+            } else {
+                print("✅ PlaidService: Synced \(allTransactions.count) transactions successfully")
+                
+                // Print sample transactions like the Python example
+                print("\n=== Added transactions ===")
+                for transaction in allTransactions.prefix(10) {
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd"
+                    print("\(dateFormatter.string(from: transaction.date)) - \(transaction.name): $\(transaction.amount)")
+                }
+                if allTransactions.count > 10 {
+                    print("... and \(allTransactions.count - 10) more transactions")
+                }
+            }
             
         } catch let error as PlaidError {
             handleError(error)
@@ -428,17 +507,22 @@ class PlaidService: ObservableObject {
             
             // Step 2: Exchange for access token
             let (accessToken, itemId) = try await exchangePublicToken(publicToken)
-            print("✅ PlaidService: Exchanged for access token")
+            print("✅ PlaidService: Exchanged for access token: \(String(accessToken.prefix(10)))...")
             
-            // Step 3: Fetch initial data
+            // Step 3: Create custom sandbox transactions for immediate data
+            try await createSandboxTransactions()
+            
+            // Step 4: Fetch initial data
             await fetchAccounts()
             await fetchTransactions()
             
             print("✅ PlaidService: Plaid connection initialized successfully")
             
         } catch let error as PlaidError {
+            print("❌ PlaidService: PlaidError during initialization: \(error.localizedDescription)")
             handleError(error)
         } catch {
+            print("❌ PlaidService: Unexpected error during initialization: \(error)")
             handleError(.unknown(error.localizedDescription))
         }
         
@@ -475,8 +559,8 @@ class PlaidService: ObservableObject {
             print("   💡 Hint: Check your Info.plist for PLAID_SANDBOX_API and PLAID_CLIENT")
         case .networkError, .noInternetConnection:
             print("   💡 Hint: Check your internet connection")
-        case .certificatePinningFailed, .untrustedCertificate:
-            print("   💡 Hint: Certificate validation failed - possible security issue")
+        case .invalidCredentials, .expiredToken:
+            print("   💡 Hint: Check your Plaid API credentials")
         default:
             break
         }
