@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import EventKit
 import UserNotifications
+import os.log
 
 // MARK: - Permission Status Enum
 
@@ -31,9 +32,15 @@ struct ContentView: View {
     @State private var transactionStore: TransactionStore?
     @State private var showPermissionSheet = false
     @State private var showTransactionList = false
+    @State private var showBudgetDashboard = false
+    @State private var navigationPath = NavigationPath()
+    @State private var showModelContextError = false
+    @State private var modelContextErrorMessage = ""
+    
+    private let logger = Logger(subsystem: "SpendConscience", category: "ContentView")
     
     var body: some View {
-        NavigationView {
+        NavigationStack(path: $navigationPath) {
             VStack(spacing: 30) {
                 VStack {
                     Text("SpendConscience")
@@ -51,6 +58,13 @@ struct ContentView: View {
                     PermissionStatusView(showPermissionSheet: $showPermissionSheet)
                 }
                 
+                // Model context error banner
+                if showModelContextError {
+                    ErrorBannerView(message: modelContextErrorMessage) {
+                        showModelContextError = false
+                    }
+                }
+                
                 Spacer()
                 
                 VStack(spacing: 16) {
@@ -65,11 +79,15 @@ struct ContentView: View {
                     .controlSize(.large)
                     
                     Button("View Budget") {
-                        // Navigation to budget view
+                        if permissionManager.needsPermissions {
+                            showPermissionSheet = true
+                        } else {
+                            navigationPath.append("BudgetDashboard")
+                        }
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .disabled(permissionManager.needsPermissions)
+                    .disabled(permissionManager.needsPermissions || dataManager == nil)
                     
                     // Plaid Testing Interface
                     if let transactionStore = transactionStore {
@@ -95,15 +113,67 @@ struct ContentView: View {
                         .environmentObject(transactionStore)
                 }
             }
-            .onAppear {
-                if dataManager == nil {
-                    dataManager = DataManager(modelContext: modelContext)
-                }
-                if transactionStore == nil {
-                    transactionStore = TransactionStore(modelContext: modelContext)
+            .navigationDestination(for: String.self) { destination in
+                switch destination {
+                case "BudgetDashboard":
+                    if let dataManager = dataManager {
+                        BudgetDashboardView(dataManager: dataManager)
+                    } else {
+                        Text("Loading...")
+                            .navigationTitle("Budget Dashboard")
+                    }
+                default:
+                    Text("Unknown destination")
                 }
             }
+            .onAppear {
+                initializeDataManagers()
+            }
         }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func initializeDataManagers() {
+        // Initialize data managers with the available modelContext
+        if dataManager == nil {
+            dataManager = DataManager(modelContext: modelContext)
+            logger.info("DataManager initialized successfully")
+        }
+        if transactionStore == nil {
+            transactionStore = TransactionStore(modelContext: modelContext)
+            logger.info("TransactionStore initialized successfully")
+        }
+    }
+}
+
+// MARK: - Error Banner View
+
+struct ErrorBannerView: View {
+    let message: String
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.red)
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.primary)
+            Spacer()
+            Button("Dismiss") {
+                onDismiss()
+            }
+            .font(.caption)
+            .foregroundColor(.blue)
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.red.opacity(0.3), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
