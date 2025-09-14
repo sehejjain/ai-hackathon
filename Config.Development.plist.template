@@ -8,7 +8,7 @@
 	<true/>
 	<!-- Configure backend URL; backend issues Plaid link_token and handles secrets server-side -->
 	<key>SpendConscienceAPIURL</key>
-	<string>https://your-project-name.vercel.app</string>
+	<string>https://spendconscience-agents-99b4avjav-sehej-jains-projects.vercel.app</string>
 	<key>EnableAIAssistant</key>
 	<true/>
 </dict>

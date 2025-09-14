@@ -8,6 +8,8 @@ class TransactionHistoryViewModel: ObservableObject {
 
     @Published var searchText = ""
     private var debouncedSearchText = ""
+    @Published var isBackendSyncing: Bool = false
+    @Published var lastBackendSync: Date?
 
     @Published var selectedCategories: Set<TransactionCategory> = [] {
         didSet {
@@ -166,6 +168,13 @@ class TransactionHistoryViewModel: ObservableObject {
 
     // MARK: - Public Methods
 
+    func syncWithBackend() async {
+        isBackendSyncing = true
+        await dataManager.syncWithBackend()
+        lastBackendSync = dataManager.getLastBackendSyncTime()
+        isBackendSyncing = false
+    }
+
     func clearFilters() {
         isBatchUpdating = true
         searchText = ""
@@ -202,6 +211,22 @@ class TransactionHistoryViewModel: ObservableObject {
         updateFilteredTransactions()
     }
 
+    func getTransactionDataSource(_ transaction: Transaction) -> String {
+        if transaction.isFromBackend {
+            return "AI Service"
+        } else if transaction.isFromLocal {
+            return "Local"
+        } else {
+            return "Unknown"
+        }
+    }
+
+    func getLastBackendSyncTime() -> Date? {
+        // Find the most recent backend sync date from transactions
+        let backendTransactions = dataManager.transactions.filter { $0.isFromBackend }
+        return backendTransactions.compactMap { $0.backendSyncDate }.max()
+    }
+
     private func updateFilteredTransactions() {
         let criteria = filterCriteria
         var filtered = dataManager.transactions
@@ -209,7 +234,8 @@ class TransactionHistoryViewModel: ObservableObject {
         // Apply search filter using debounced debouncedSearchText
         if !debouncedSearchText.isEmpty {
             filtered = filtered.filter { transaction in
-                transaction.description.localizedCaseInsensitiveContains(debouncedSearchText)
+                transaction.description.localizedCaseInsensitiveContains(debouncedSearchText) ||
+                transaction.merchantName?.localizedCaseInsensitiveContains(debouncedSearchText) == true
             }
         }
 

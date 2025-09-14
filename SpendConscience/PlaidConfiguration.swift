@@ -31,6 +31,7 @@ class PlaidConfiguration {
     // MARK: - API Credentials
     
     /// Plaid API secret from configuration (renamed from apiKey for clarity)
+    /// Returns nil when using server-side backend integration
     static var secret: String? {
         let key: String
         switch environment {
@@ -42,7 +43,8 @@ class PlaidConfiguration {
         
         // 1. Try plist file first (for development)
         if let configSecret = configVariables[key] as? String,
-           !configSecret.isEmpty {
+           !configSecret.isEmpty,
+           !configSecret.contains("YOUR_PLAID_") { // Skip placeholder values
             print("✅ PlaidConfiguration: Found \(key) in Config.Development.plist")
             return configSecret
         }
@@ -62,8 +64,13 @@ class PlaidConfiguration {
             return secret
         }
         
-        print("❌ PlaidConfiguration: \(key) not found in plist, environment variables, or Info.plist")
-        print("   💡 Run ./setup-development.sh to configure your environment")
+        // Graceful handling when using server-side backend
+        if ConfigurationLoader.getString(ConfigurationLoader.spendConscienceAPIURLKey) != nil {
+            print("ℹ️ PlaidConfiguration: Using server-side Plaid integration - client-side keys not required")
+        } else {
+            print("❌ PlaidConfiguration: \(key) not found in plist, environment variables, or Info.plist")
+            print("   💡 Run ./setup-development.sh to configure your environment")
+        }
         return nil
     }
     
@@ -74,10 +81,12 @@ class PlaidConfiguration {
     }
     
     /// Plaid client ID from configuration
+    /// Returns nil when using server-side backend integration
     static var clientId: String? {
         // 1. Try plist file first (for development)
         if let configClientId = configVariables["PlaidClientID"] as? String,
-           !configClientId.isEmpty {
+           !configClientId.isEmpty,
+           !configClientId.contains("YOUR_PLAID_") { // Skip placeholder values
             print("✅ PlaidConfiguration: Found PlaidClientID in Config.Development.plist")
             return configClientId
         }
@@ -96,8 +105,13 @@ class PlaidConfiguration {
             return clientId
         }
         
-        print("❌ PlaidConfiguration: PlaidClientID not found in plist, environment variables, or Info.plist")
-        print("   💡 Run ./setup-development.sh to configure your environment")
+        // Graceful handling when using server-side backend
+        if ConfigurationLoader.getString(ConfigurationLoader.spendConscienceAPIURLKey) != nil {
+            print("ℹ️ PlaidConfiguration: Using server-side Plaid integration - client-side keys not required")
+        } else {
+            print("❌ PlaidConfiguration: PlaidClientID not found in plist, environment variables, or Info.plist")
+            print("   💡 Run ./setup-development.sh to configure your environment")
+        }
         return nil
     }
     
@@ -116,7 +130,15 @@ class PlaidConfiguration {
     // MARK: - Validation Methods
     
     /// Validates that all required credentials are present and valid
+    /// Returns true when using server-side backend integration
     static func validateCredentials() -> Bool {
+        // If using server-side backend, client-side Plaid credentials are not required
+        if ConfigurationLoader.getString(ConfigurationLoader.spendConscienceAPIURLKey) != nil {
+            print("✅ PlaidConfiguration: Using server-side integration - validation passed")
+            return true
+        }
+        
+        // For direct Plaid integration, validate credentials
         guard let apiKey = apiKey, !apiKey.isEmpty else {
             print("❌ PlaidConfiguration: Invalid or missing API key")
             return false
@@ -136,8 +158,17 @@ class PlaidConfiguration {
         print("🔧 PlaidConfiguration Status:")
         print("   Environment: \(environment.rawValue)")
         print("   Base URL: \(baseURL)")
-        print("   API Key: \(apiKey != nil ? "✅ Present" : "❌ Missing")")
-        print("   Client ID: \(clientId != nil ? "✅ Present" : "❌ Missing")")
+        
+        if ConfigurationLoader.getString(ConfigurationLoader.spendConscienceAPIURLKey) != nil {
+            print("   Integration Mode: Server-side (SpendConscience API)")
+            print("   API Key: Not required for server-side integration")
+            print("   Client ID: Not required for server-side integration")
+        } else {
+            print("   Integration Mode: Direct Plaid")
+            print("   API Key: \(apiKey != nil ? "✅ Present" : "❌ Missing")")
+            print("   Client ID: \(clientId != nil ? "✅ Present" : "❌ Missing")")
+        }
+        
         print("   Valid: \(validateCredentials() ? "✅" : "❌")")
     }
 }

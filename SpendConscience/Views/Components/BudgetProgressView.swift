@@ -86,6 +86,14 @@ struct BudgetProgressView: View {
 
                     Spacer()
                     
+                    // AI data source indicator
+                    if budget.isFromBackend {
+                        Image(systemName: "cloud.fill")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .accessibilityLabel("AI processed data")
+                    }
+                    
                     // Visual indicator that the view is tappable
                     Image(systemName: "chevron.right")
                         .font(.caption)

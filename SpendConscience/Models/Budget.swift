@@ -7,11 +7,30 @@ final class Budget: Identifiable, Hashable {
         case invalidMonthlyLimit
         case invalidAlertThreshold
     }
+    
+    enum BudgetDataSource: String, CaseIterable, Codable {
+        case local = "local"
+        case backend = "backend"
+        case hybrid = "hybrid"
+    }
+    
     @Attribute(.unique) var id: UUID
     @Attribute(.unique) var categoryRaw: String
     var monthlyLimit: Decimal
     var currentSpent: Decimal
     var alertThreshold: Double
+    var dataSourceRaw: String?
+    var backendSyncDate: Date?
+    
+    var dataSource: BudgetDataSource? {
+        get {
+            guard let raw = dataSourceRaw else { return nil }
+            return BudgetDataSource(rawValue: raw)
+        }
+        set {
+            dataSourceRaw = newValue?.rawValue
+        }
+    }
 
     @Relationship(deleteRule: .nullify, inverse: \Transaction.budget) var transactions: [Transaction] = []
 
@@ -78,6 +97,16 @@ final class Budget: Identifiable, Hashable {
             return .safe
         }
     }
+    
+    // MARK: - Backend Integration Properties
+    
+    var isFromBackend: Bool {
+        return dataSource == .backend || dataSource == .hybrid
+    }
+    
+    var isFromLocal: Bool {
+        return dataSource == .local || dataSource == nil
+    }
 
     func updateSpentAmount(by amount: Decimal) {
         currentSpent = max(0, currentSpent + amount)
@@ -85,6 +114,27 @@ final class Budget: Identifiable, Hashable {
 
     func resetMonthlySpent() {
         currentSpent = 0
+    }
+    
+    // MARK: - Backend Integration Methods
+    
+    convenience init(from backendBudget: BackendBudget) throws {
+        try self.init(
+            id: UUID(),
+            category: TransactionCategory(rawValue: backendBudget.category) ?? .other,
+            monthlyLimit: Decimal(backendBudget.monthlyLimit),
+            currentSpent: Decimal(backendBudget.currentSpent),
+            alertThreshold: backendBudget.utilizationPercentage >= 0.8 ? 0.8 : 0.9
+        )
+        self.dataSource = .backend
+        self.backendSyncDate = Date()
+    }
+    
+    func mergeWithBackendData(_ backendBudget: BackendBudget) {
+        self.monthlyLimit = Decimal(backendBudget.monthlyLimit)
+        self.currentSpent = Decimal(backendBudget.currentSpent)
+        self.dataSource = .hybrid
+        self.backendSyncDate = Date()
     }
 
     func hash(into hasher: inout Hasher) {

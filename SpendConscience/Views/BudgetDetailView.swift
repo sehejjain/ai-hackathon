@@ -57,10 +57,9 @@ struct BudgetDetailView: View {
             loadBudget()
         }
         .sheet(isPresented: $showingEditSheet) {
-            if let _ = budget {
-                // TODO: Create BudgetEditView
-                Text("Edit Budget View")
-                    .navigationTitle("Edit Budget")
+            if let budget = budget {
+                BudgetEditView(budget: budget)
+                    .environmentObject(dataManager)
             }
         }
         .alert("Delete Budget", isPresented: $showingDeleteAlert) {
