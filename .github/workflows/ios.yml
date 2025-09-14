@@ -9,7 +9,7 @@ on:
 env:
   SCHEME: "SpendConscience"
   PROJECT: "SpendConscience.xcodeproj"
-  DESTINATION: "platform=iOS Simulator,name=iPhone 15"
+  DESTINATION: "platform=iOS Simulator,name=iPhone 16"
 
 jobs:
   test:
